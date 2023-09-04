@@ -1,4 +1,4 @@
-#include <algorithm>
+﻿#include <algorithm>
 #include <iostream>
 #include <vector>
 #include <cassert>
@@ -127,6 +127,7 @@ public:
 
 private:
     Piece pieces[64];
+
 };
 
 class Move {
@@ -215,6 +216,7 @@ std::ostream& operator<<(std::ostream& o, Piece piece) {
     }
     return o;
 }
+
 
 std::ostream& operator<<(std::ostream& o, const Board& board) {
     for (int8_t r = 7; r >= 0; r--) {
@@ -475,15 +477,14 @@ void ApplyMove(Board& board, const Move& move) {
             board({ 0, 5 }) = Piece::MY_ROOK;
         }
     }
-    
+
     board(move.to) = board(move.from);
     board(move.from) = Piece::NO_PIECE;
     if (move.to.rank == 7 && board(move.to) == Piece::MY_PAWN)
         board(move.to) = Piece::MY_QUEEN;
-    
-
-
 }
+
+constexpr int MAX_SCORE = 1000000;
 
 int MinMax(Board& board, int depth, int alpha, int beta) {
     if (depth == 0) {
@@ -505,9 +506,13 @@ int MinMax(Board& board, int depth, int alpha, int beta) {
         });
 
 
-    auto maxScore = -1000000;
+    auto maxScore = -MAX_SCORE;
 
     for (const auto& move : moves) {
+        // Search no further if king was captured
+        if (board(move.to) == Piece::ENEMY_KING) 
+            return MAX_SCORE;
+
         Board nextBoard = board;
         ApplyMove(nextBoard, move);
         nextBoard.Invert();
