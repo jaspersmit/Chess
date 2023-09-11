@@ -165,28 +165,6 @@ int EvaluateBoard(const Board& board) {
     return score;
 }
 
-void ApplyMove(Board& board, const Move& move) {
-    // Apply castling move
-    if (board(move.from) == Piece::MY_KING && move.from == Square{ 0, 4 }) {
-        if (move.to == Square{ 0, 2 }) {
-            //Move rook
-            board({ 0, 0 }) = Piece::NO_PIECE;
-            board({ 0, 3 }) = Piece::MY_ROOK;
-        }
-        if (move.to == Square{ 0, 6 }) {
-            //Move rook
-            board({ 0, 7 }) = Piece::NO_PIECE;
-            board({ 0, 5 }) = Piece::MY_ROOK;
-        }
-    }
-
-    board(move.to) = board(move.from);
-    board(move.from) = Piece::NO_PIECE;
-    if (move.to.rank == 7 && board(move.to) == Piece::MY_PAWN)
-        board(move.to) = Piece::MY_QUEEN;
-}
-
-
 int MinMax(Board& board, int depth, int alpha, int beta) {
     if (depth == 0) {
         return EvaluateBoard(board);
@@ -208,7 +186,7 @@ int MinMax(Board& board, int depth, int alpha, int beta) {
             return MAX_SCORE;
 
         Board nextBoard = board;
-        ApplyMove(nextBoard, move);
+        nextBoard.ApplyMove(move);
         nextBoard.Invert();
         auto score = -MinMax(nextBoard, depth - 1, -beta, -alpha);
         if (score > alpha) alpha = score;
@@ -228,7 +206,7 @@ Move FindBestMove(Board& board, int depth) {
 
     for (const auto& move : moves) {
         Board nextBoard = board;
-        ApplyMove(nextBoard, move);
+        nextBoard.ApplyMove(move);
         //std::cout << nextBoard << "\n";
         nextBoard.Invert();
         //std::cout << "Inverted:\n";
@@ -347,7 +325,7 @@ void PlayLoop() {
             }
         }
         std::cout << "Your move " << move << "\n";
-        ApplyMove(board, move);
+        board.ApplyMove(move);
 
         std::cout << board;
 
@@ -355,7 +333,7 @@ void PlayLoop() {
         numEvaluates = 0;
         move = FindBestMove(board, 5);
         std::cout << "Evaluated " << numEvaluates << " nodes\n";
-        ApplyMove(board, move);
+        board.ApplyMove(move);
         board.Invert();
         std::cout << board;
     }

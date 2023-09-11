@@ -3,9 +3,15 @@
 #include <cassert>
 
 #include "Square.h"
+#include "Move.h"
 #include "Piece.h"
 
 constexpr int MAX_SCORE = 1000000;
+
+enum class Party : uint8_t {
+    WHITE,
+    BLACK
+};
 
 
 class Board {
@@ -34,6 +40,8 @@ public:
         return (*this)(square) >= Piece::ENEMY_PAWN;
     }
 
+    void ApplyMove(const Move& move);
+
     void Invert() {
         for (int i1 = 0; i1 < 32; i1++) {
             auto i2 = 63 - i1;
@@ -46,5 +54,5 @@ public:
 
 private:
     Piece pieces[64];
-
+    Party party = Party::WHITE;
 };

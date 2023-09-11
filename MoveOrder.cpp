@@ -51,7 +51,6 @@ void OrderMoves(const Board& board, std::vector<Move>& moves, std::vector<int>& 
 
 
     std::iota(indices.begin(), indices.end(), 0);
-
     std::sort(indices.begin(), indices.end(), [&](size_t a, size_t b) {
         return moveScores[a] > moveScores[b];
         });
