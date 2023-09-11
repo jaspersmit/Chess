@@ -19,26 +19,26 @@ void SetDefaultBoard(Board& board) {
             board({ r, f }) = Piece::NO_PIECE;
     
     for (int8_t f = 0; f < 8; f++) {
-        board({ 1, f }) = Piece::MY_PAWN;
-        board({ 6, f }) = Piece::ENEMY_PAWN;
+        board({ 1, f }) = Piece::WHITE_PAWN;
+        board({ 6, f }) = Piece::BLACK_PAWN;
     }
 
-    board({ 0, 0 }) = Piece::MY_ROOK;
-    board({ 0, 1 }) = Piece::MY_KNIGHT;
-    board({ 0, 2 }) = Piece::MY_BISHOP;
-    board({ 0, 3 }) = Piece::MY_QUEEN;
-    board({ 0, 4 }) = Piece::MY_KING;
-    board({ 0, 5 }) = Piece::MY_BISHOP;
-    board({ 0, 6 }) = Piece::MY_KNIGHT;
-    board({ 0, 7 }) = Piece::MY_ROOK;
-    board({ 7, 0 }) = Piece::ENEMY_ROOK;
-    board({ 7, 1 }) = Piece::ENEMY_KNIGHT;
-    board({ 7, 2 }) = Piece::ENEMY_BISHOP;
-    board({ 7, 3 }) = Piece::ENEMY_QUEEN;
-    board({ 7, 4 }) = Piece::ENEMY_KING;
-    board({ 7, 5 }) = Piece::ENEMY_BISHOP;
-    board({ 7, 6 }) = Piece::ENEMY_KNIGHT;
-    board({ 7, 7 }) = Piece::ENEMY_ROOK;
+    board({ 0, 0 }) = Piece::WHITE_ROOK;
+    board({ 0, 1 }) = Piece::WHITE_KNIGHT;
+    board({ 0, 2 }) = Piece::WHITE_BISHOP;
+    board({ 0, 3 }) = Piece::WHITE_QUEEN;
+    board({ 0, 4 }) = Piece::WHITE_KING;
+    board({ 0, 5 }) = Piece::WHITE_BISHOP;
+    board({ 0, 6 }) = Piece::WHITE_KNIGHT;
+    board({ 0, 7 }) = Piece::WHITE_ROOK;
+    board({ 7, 0 }) = Piece::BLACK_ROOK;
+    board({ 7, 1 }) = Piece::BLACK_KNIGHT;
+    board({ 7, 2 }) = Piece::BLACK_BISHOP;
+    board({ 7, 3 }) = Piece::BLACK_QUEEN;
+    board({ 7, 4 }) = Piece::BLACK_KING;
+    board({ 7, 5 }) = Piece::BLACK_BISHOP;
+    board({ 7, 6 }) = Piece::BLACK_KNIGHT;
+    board({ 7, 7 }) = Piece::BLACK_ROOK;
 }
 
 std::ostream& operator<<(std::ostream& o, Piece piece) {
@@ -46,40 +46,40 @@ std::ostream& operator<<(std::ostream& o, Piece piece) {
     case Piece::NO_PIECE:
         o << ".";
         break;
-    case Piece::MY_PAWN:
+    case Piece::WHITE_PAWN:
         o << "p";
         break;
-    case Piece::MY_ROOK:
+    case Piece::WHITE_ROOK:
         o << "r";
         break;
-    case Piece::MY_KNIGHT:
+    case Piece::WHITE_KNIGHT:
         o << "n";
         break;
-    case Piece::MY_BISHOP:
+    case Piece::WHITE_BISHOP:
         o << "b";
         break;
-    case Piece::MY_QUEEN:
+    case Piece::WHITE_QUEEN:
         o << "q";
         break;
-    case Piece::MY_KING:
+    case Piece::WHITE_KING:
         o << "k";
         break;
-    case Piece::ENEMY_PAWN:
+    case Piece::BLACK_PAWN:
         o << "P";
         break;
-    case Piece::ENEMY_ROOK:
+    case Piece::BLACK_ROOK:
         o << "R";
         break;
-    case Piece::ENEMY_KNIGHT:
+    case Piece::BLACK_KNIGHT:
         o << "N";
         break;
-    case Piece::ENEMY_BISHOP:
+    case Piece::BLACK_BISHOP:
         o << "B";
         break;
-    case Piece::ENEMY_QUEEN:
+    case Piece::BLACK_QUEEN:
         o << "Q";
         break;
-    case Piece::ENEMY_KING:
+    case Piece::BLACK_KING:
         o << "K";
         break;
     }
@@ -114,40 +114,40 @@ int EvaluateBoard(const Board& board) {
             switch (board({r, f})) {
             case Piece::NO_PIECE:
                 break;
-            case Piece::MY_PAWN:
+            case Piece::WHITE_PAWN:
                 score += 1;
                 break;
-            case Piece::MY_ROOK:
+            case Piece::WHITE_ROOK:
                 score += 5;
                 break;
-            case Piece::MY_KNIGHT:
+            case Piece::WHITE_KNIGHT:
                 score += 3;
                 break;
-            case Piece::MY_BISHOP:
+            case Piece::WHITE_BISHOP:
                 score += 3;
                 break;
-            case Piece::MY_QUEEN:
+            case Piece::WHITE_QUEEN:
                 score += 9;
                 break;
-            case Piece::MY_KING:
+            case Piece::WHITE_KING:
                 score += 1000000;
                 break;
-            case Piece::ENEMY_PAWN:
+            case Piece::BLACK_PAWN:
                 score -= 1;
                 break;
-            case Piece::ENEMY_ROOK:
+            case Piece::BLACK_ROOK:
                 score -= 5;
                 break;
-            case Piece::ENEMY_KNIGHT:
+            case Piece::BLACK_KNIGHT:
                 score -= 3;
                 break;
-            case Piece::ENEMY_BISHOP:
+            case Piece::BLACK_BISHOP:
                 score -= 3;
                 break;
-            case Piece::ENEMY_QUEEN:
+            case Piece::BLACK_QUEEN:
                 score -= 9;
                 break;
-            case Piece::ENEMY_KING:
+            case Piece::BLACK_KING:
                 score -= 1000000;
                 break;
             }
@@ -158,11 +158,11 @@ int EvaluateBoard(const Board& board) {
     for(int8_t rank = 3; rank <= 4; rank++)
         for (int8_t file = 3; file <= 4; file++) {
             auto square = Square{ rank, file };
-            if (board.HasEnemy(square)) score--;
-            if (board.HasFriend(square)) score++;
+            if (board.IsBlack(square)) score--;
+            if (board.IsWhite(square)) score++;
         }
 
-    return score;
+    return static_cast<int>(board.GetTurn()) * score;
 }
 
 int MinMax(Board& board, int depth, int alpha, int beta) {
@@ -182,12 +182,12 @@ int MinMax(Board& board, int depth, int alpha, int beta) {
     for (const auto& index : indices) {
         auto& move = moves[index];
         // Search no further if king was captured
-        if (board(move.to) == Piece::ENEMY_KING) 
+        if (board(move.to) == Piece::BLACK_KING) 
             return MAX_SCORE;
 
         Board nextBoard = board;
         nextBoard.ApplyMove(move);
-        nextBoard.Invert();
+        nextBoard.SwitchTurn();
         auto score = -MinMax(nextBoard, depth - 1, -beta, -alpha);
         if (score > alpha) alpha = score;
         if (score > beta) return beta;
@@ -202,13 +202,13 @@ Move FindBestMove(Board& board, int depth) {
     GenerateMoves(board, moves);
 
     auto maxMove = Move{ {0, 0},  {0, 0} };
-    auto maxScore = -1000000;
+    auto maxScore = -MAX_SCORE;
 
     for (const auto& move : moves) {
         Board nextBoard = board;
         nextBoard.ApplyMove(move);
         //std::cout << nextBoard << "\n";
-        nextBoard.Invert();
+        nextBoard.SwitchTurn();
         //std::cout << "Inverted:\n";
         //std::cout << nextBoard << "\n\n\n";
         auto score = -MinMax(nextBoard, depth - 1, -1000000, 1000000);
@@ -264,40 +264,40 @@ void ParseBoard(Board& board, const std::string& str) {
 
         switch (c) {
         case 'p':
-            piece = Piece::MY_PAWN;
+            piece = Piece::WHITE_PAWN;
             break;
         case 'r':
-            piece = Piece::MY_ROOK;
+            piece = Piece::WHITE_ROOK;
             break;
         case 'n':
-            piece = Piece::MY_KNIGHT;
+            piece = Piece::WHITE_KNIGHT;
             break;
         case 'b':
-            piece = Piece::MY_BISHOP;
+            piece = Piece::WHITE_BISHOP;
             break;
         case 'k':
-            piece = Piece::MY_KING;
+            piece = Piece::WHITE_KING;
             break;
         case 'q':
-            piece = Piece::MY_QUEEN;
+            piece = Piece::WHITE_QUEEN;
             break;
         case 'P':
-            piece = Piece::ENEMY_PAWN;
+            piece = Piece::BLACK_PAWN;
             break;
         case 'R':
-            piece = Piece::ENEMY_ROOK;
+            piece = Piece::BLACK_ROOK;
             break;
         case 'N':
-            piece = Piece::ENEMY_KNIGHT;
+            piece = Piece::BLACK_KNIGHT;
             break;
         case 'B':
-            piece = Piece::ENEMY_BISHOP;
+            piece = Piece::BLACK_BISHOP;
             break;
         case 'K':
-            piece = Piece::ENEMY_KING;
+            piece = Piece::BLACK_KING;
             break;
         case 'Q':
-            piece = Piece::ENEMY_QUEEN;
+            piece = Piece::BLACK_QUEEN;
             break;
         }
         int8_t rank = 7 - (i / 8);
@@ -326,15 +326,15 @@ void PlayLoop() {
         }
         std::cout << "Your move " << move << "\n";
         board.ApplyMove(move);
+        board.SwitchTurn();
 
         std::cout << board;
 
-        board.Invert();
         numEvaluates = 0;
         move = FindBestMove(board, 5);
         std::cout << "Evaluated " << numEvaluates << " nodes\n";
         board.ApplyMove(move);
-        board.Invert();
+        board.SwitchTurn();
         std::cout << board;
     }
 

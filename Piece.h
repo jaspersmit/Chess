@@ -4,18 +4,18 @@
 
 enum class Piece : uint8_t {
     NO_PIECE,
-    MY_PAWN,
-    MY_ROOK,
-    MY_KNIGHT,
-    MY_BISHOP,
-    MY_QUEEN,
-    MY_KING,
-    ENEMY_PAWN,
-    ENEMY_ROOK,
-    ENEMY_KNIGHT,
-    ENEMY_BISHOP,
-    ENEMY_QUEEN,
-    ENEMY_KING,
+    WHITE_PAWN,
+    WHITE_ROOK,
+    WHITE_KNIGHT,
+    WHITE_BISHOP,
+    WHITE_QUEEN,
+    WHITE_KING,
+    BLACK_PAWN,
+    BLACK_ROOK,
+    BLACK_KNIGHT,
+    BLACK_BISHOP,
+    BLACK_QUEEN,
+    BLACK_KING,
 };
 
 Piece InvertPiece(Piece piece);

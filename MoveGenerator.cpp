@@ -1,16 +1,20 @@
+#include <iostream>
+
 #include "MoveGenerator.h"
 
 #define GEN_MOVE(target) moves.push_back({ from, target })
 
 void GeneratePawnMoves(const Board& board, std::vector<Move>& moves, Square from) {
-    auto up1 = from.Add(1, 0);
+    auto pushDir = (board.GetTurn() == Color::WHITE) ? Direction{1, 0} : Direction{-1, 0};
+    auto up1 = from.Add(pushDir);
     if (board.IsEmpty(up1)) {
         if (from.rank == 6) {
             // Special treat promotion
         }
         moves.push_back({ from, up1 });
-        if (from.rank == 1) {
-            auto up2 = up1.Add(1, 0);
+        int8_t startRank = (board.GetTurn() == Color::WHITE) ? 1 : 6;
+        if (from.rank == startRank) {
+            auto up2 = up1.Add(pushDir);
             if (board(up2) == Piece::NO_PIECE)
                 GEN_MOVE(up2);
         }
@@ -19,13 +23,13 @@ void GeneratePawnMoves(const Board& board, std::vector<Move>& moves, Square from
     // Capturing moves
     if (from.file > 0) {
         auto left = up1.Add(0, -1);
-        if (board.HasEnemy(left)) {
+        if (board.IsOtherPlayer(left)) {
             GEN_MOVE(left);
         }
     }
     if (from.file < 7) {
         auto right = up1.Add(0, 1);
-        if (board.HasEnemy(right)) {
+        if (board.IsOtherPlayer(right)) {
             GEN_MOVE(right);
         }
     }
@@ -45,7 +49,7 @@ Direction knightMoves[8] = {
 void GenerateKnightMoves(const Board& board, std::vector<Move>& moves, Square from) {
     for (int i = 0; i < 8; i++) {
         auto to = from.Add(knightMoves[i]);
-        if (to.IsValid() && !board.HasFriend(to)) {
+        if (to.IsValid() && !board.IsCurrentPlayer(to)) {
             GEN_MOVE(to);
         }
     }
@@ -65,9 +69,9 @@ void GenerateBishopMoves(const Board& board, std::vector<Move>& moves, Square fr
         while (true) {
             to = to.Add(direction);
             if (!to.IsValid()) break;
-            if (board.HasFriend(to)) break;
+            if (board.IsCurrentPlayer(to)) break;
             GEN_MOVE(to);
-            if (board.HasEnemy(to)) break;
+            if (board.IsOtherPlayer(to)) break;
         }
     }
 }
@@ -86,9 +90,9 @@ void GenerateRookMoves(const Board& board, std::vector<Move>& moves, Square from
         while (true) {
             to = to.Add(direction);
             if (!to.IsValid()) break;
-            if (board.HasFriend(to)) break;
+            if (board.IsCurrentPlayer(to)) break;
             GEN_MOVE(to);
-            if (board.HasEnemy(to)) break;
+            if (board.IsOtherPlayer(to)) break;
         }
     }
 }
@@ -112,20 +116,20 @@ Direction kingDirections[] = {
 void GenerateKingMoves(const Board& board, std::vector<Move>& moves, Square from) {
     for (int i = 0; i < 8; i++) {
         Square to = from.Add(kingDirections[i]);
-        if (to.IsValid() && !board.HasFriend(to)) {
+        if (to.IsValid() && !board.IsCurrentPlayer(to)) {
             GEN_MOVE(to);
         }
     }
     //Castling
     if (from == Square{ 0, 4 }) {
-        if (board({ 0, 0 }) == Piece::MY_ROOK
+        if (board({ 0, 0 }) == Piece::WHITE_ROOK
             && board({ 0, 1 }) == Piece::NO_PIECE
             && board({ 0, 2 }) == Piece::NO_PIECE
             && board({ 0, 3 }) == Piece::NO_PIECE) {
             Square to = { 0, 2 };
             GEN_MOVE(to);
         }
-        if (board({ 0, 7 }) == Piece::MY_ROOK
+        if (board({ 0, 7 }) == Piece::WHITE_ROOK
             && board({ 0, 5 }) == Piece::NO_PIECE
             && board({ 0, 6 }) == Piece::NO_PIECE) {
             Square to = { 0, 6 };
@@ -138,25 +142,49 @@ void GenerateMoves(const Board& board, std::vector<Move>& moves) {
     for (int8_t r = 7; r >= 0; r--) {
         for (int8_t f = 0; f < 8; f++) {
             auto square = Square{ r, f };
-            switch (board(square)) {
-            case Piece::MY_PAWN:
-                GeneratePawnMoves(board, moves, square);
-                break;
-            case Piece::MY_ROOK:
-                GenerateRookMoves(board, moves, square);
-                break;
-            case Piece::MY_KNIGHT:
-                GenerateKnightMoves(board, moves, square);
-                break;
-            case Piece::MY_BISHOP:
-                GenerateBishopMoves(board, moves, square);
-                break;
-            case Piece::MY_QUEEN:
-                GenerateQueenMoves(board, moves, square);
-                break;
-            case Piece::MY_KING:
-                GenerateKingMoves(board, moves, square);
-                break;
+            if (board.GetTurn() == Color::WHITE) {
+                switch (board(square)) {
+                case Piece::WHITE_PAWN:
+                    GeneratePawnMoves(board, moves, square);
+                    break;
+                case Piece::WHITE_ROOK:
+                    GenerateRookMoves(board, moves, square);
+                    break;
+                case Piece::WHITE_KNIGHT:
+                    GenerateKnightMoves(board, moves, square);
+                    break;
+                case Piece::WHITE_BISHOP:
+                    GenerateBishopMoves(board, moves, square);
+                    break;
+                case Piece::WHITE_QUEEN:
+                    GenerateQueenMoves(board, moves, square);
+                    break;
+                case Piece::WHITE_KING:
+                    GenerateKingMoves(board, moves, square);
+                    break;
+                }
+            }
+            else {
+                switch (board(square)) {
+                case Piece::BLACK_PAWN:
+                    GeneratePawnMoves(board, moves, square);
+                    break;
+                case Piece::BLACK_ROOK:
+                    GenerateRookMoves(board, moves, square);
+                    break;
+                case Piece::BLACK_KNIGHT:
+                    GenerateKnightMoves(board, moves, square);
+                    break;
+                case Piece::BLACK_BISHOP:
+                    GenerateBishopMoves(board, moves, square);
+                    break;
+                case Piece::BLACK_QUEEN:
+                    GenerateQueenMoves(board, moves, square);
+                    break;
+                case Piece::BLACK_KING:
+                    GenerateKingMoves(board, moves, square);
+                    break;
+                }
             }
         }
     }

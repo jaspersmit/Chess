@@ -13,36 +13,36 @@ void OrderMoves(const Board& board, std::vector<Move>& moves, std::vector<int>& 
         int score = 0;
 
         switch (board(move.to)) {
-        case Piece::ENEMY_KING:
+        case Piece::BLACK_KING:
             score += MAX_SCORE;
             break;
-        case Piece::ENEMY_QUEEN:
+        case Piece::BLACK_QUEEN:
             score += 90;
             break;
-        case Piece::ENEMY_ROOK:
+        case Piece::BLACK_ROOK:
             score += 50;
             break;
-        case Piece::ENEMY_KNIGHT:
-        case Piece::ENEMY_BISHOP:
+        case Piece::BLACK_KNIGHT:
+        case Piece::BLACK_BISHOP:
             score += 30;
             break;
-        case Piece::ENEMY_PAWN:
+        case Piece::BLACK_PAWN:
             score += 10;
             break;
         }
 
         switch (board(move.from)) {
-        case Piece::MY_KING:
+        case Piece::WHITE_KING:
             score += 1;
             break;
-        case Piece::MY_QUEEN:
+        case Piece::WHITE_QUEEN:
             score += 9;
             break;
-        case Piece::MY_ROOK:
+        case Piece::WHITE_ROOK:
             score += 5;
             break;
-        case Piece::MY_KNIGHT:
-        case Piece::MY_BISHOP:
+        case Piece::WHITE_KNIGHT:
+        case Piece::WHITE_BISHOP:
             score += 3;
             break;
         }
