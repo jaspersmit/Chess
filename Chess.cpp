@@ -1,148 +1,17 @@
 ﻿#include <algorithm>
 #include <iostream>
+#include <numeric>
 #include <vector>
 #include <cassert>
 
-enum class Piece : uint8_t {
-    NO_PIECE,
-    MY_PAWN,
-    MY_ROOK,
-    MY_KNIGHT,
-    MY_BISHOP,
-    MY_QUEEN,
-    MY_KING,
-    ENEMY_PAWN,
-    ENEMY_ROOK,
-    ENEMY_KNIGHT,
-    ENEMY_BISHOP,
-    ENEMY_QUEEN,
-    ENEMY_KING,
-};
+#include "Board.h"
+#include "Move.h"
+#include "MoveGenerator.h"
+#include "MoveOrder.h"
+#include "Piece.h"
 
-class Direction {
-public:
-    int8_t vertical;
-    int8_t horizontal;
-};
 
-class Square {
-public:
-    int8_t rank;
-    int8_t file;
-
-     Square(int8_t rank, int8_t file) :
-        rank(rank), file(file) {
-
-    }
-
-    auto operator+ (const Square& other) const -> Square {
-        return { rank + other.rank, file + other.file };
-    }
-
-    auto operator == (const Square& other) const -> bool {
-        return other.file == file && other.rank == rank;
-    }
-
-    auto Add(int8_t r, int8_t f) const-> Square {
-        return { rank + r, file + f };
-    }
-
-    auto Add(Direction direction) const-> Square {
-        return { rank + direction.vertical, file + direction.horizontal };
-    }
-
-    auto IsValid() const -> bool {
-        return rank >= 0 && rank < 8 && file >= 0 && file < 8;
-    }
-};
-
-Piece InvertPiece(Piece piece) {
-    //TODO Do bit magic
-    switch (piece) {
-    case Piece::NO_PIECE:
-        return Piece::NO_PIECE;
-    case Piece::MY_PAWN:
-        return Piece::ENEMY_PAWN;
-    case Piece::MY_ROOK:
-        return Piece::ENEMY_ROOK;
-    case Piece::MY_KNIGHT:
-        return Piece::ENEMY_KNIGHT;
-    case Piece::MY_BISHOP:
-        return Piece::ENEMY_BISHOP;
-    case Piece::MY_QUEEN:
-        return Piece::ENEMY_QUEEN;
-    case Piece::MY_KING:
-        return Piece::ENEMY_KING;
-    case Piece::ENEMY_PAWN:
-        return Piece::MY_PAWN;
-    case Piece::ENEMY_ROOK:
-        return Piece::MY_ROOK;
-    case Piece::ENEMY_KNIGHT:
-        return Piece::MY_KNIGHT;
-    case Piece::ENEMY_BISHOP:
-        return Piece::MY_BISHOP;
-    case Piece::ENEMY_QUEEN:
-        return Piece::MY_QUEEN;
-    case Piece::ENEMY_KING:
-        return Piece::MY_KING;
-    }
-    assert(false);
-}
-
-class Board {
-public:
-    auto operator() (Square square) -> Piece& {
-        assert(square.rank * 8 + square.file < 64);
-        assert(square.rank * 8 + square.file >= 0);
-        return pieces[square.rank * 8 + square.file];
-    }
-
-    auto operator() (Square square) const -> const Piece& {
-        assert(square.rank * 8 + square.file < 64);
-        assert(square.rank * 8 + square.file >= 0);
-        return pieces[square.rank * 8 + square.file];
-    }
-
-    auto IsEmpty(Square square) const -> bool {
-        return (*this)(square) == Piece::NO_PIECE;
-    }
-
-    auto HasFriend(Square square) const -> bool {
-        return (*this)(square) >= Piece::MY_PAWN && (*this)(square) < Piece::ENEMY_PAWN;
-    }
-
-    auto HasEnemy(Square square) const -> bool {
-        return (*this)(square) >= Piece::ENEMY_PAWN;
-    }
-
-    void Invert() {
-        for (int i1 = 0; i1 < 32; i1++) {
-            auto i2 = 63 - i1;
-            auto p1 = InvertPiece(pieces[i1]);
-            auto p2 = InvertPiece(pieces[i2]);
-            pieces[i2] = p1;
-            pieces[i1] = p2;
-        }
-    }
-
-private:
-    Piece pieces[64];
-
-};
-
-class Move {
-public:
-    Square from;
-    Square to;
-    Piece piece;
-    Piece capture;
-
-    auto operator==(const Move& other) const -> bool {
-        return other.from == from && other.to == to;
-    }
-};
-
-Move INVALID_MOVE = { {0,0}, {0,0}, Piece::NO_PIECE, Piece::NO_PIECE };
+Move INVALID_MOVE = { {0,0}, {0,0} };
 
 void SetDefaultBoard(Board& board) {
     for (int8_t r = 0; r < 8; r++)
@@ -217,7 +86,6 @@ std::ostream& operator<<(std::ostream& o, Piece piece) {
     return o;
 }
 
-
 std::ostream& operator<<(std::ostream& o, const Board& board) {
     for (int8_t r = 7; r >= 0; r--) {
         for (int8_t f = 0; f < 8; f++) {
@@ -232,12 +100,14 @@ std::ostream& operator<<(std::ostream& o, const Square& square) {
     return o << static_cast<char>('A' + square.file) << (square.rank + 1);
 }
 
-
 std::ostream& operator<<(std::ostream& o, const Move& move) {
     return o << move.from << " -> " << move.to;
 }
 
+int numEvaluates = 0;
+
 int EvaluateBoard(const Board& board) {
+    numEvaluates++;
     int score = 0;
     for (int8_t r = 7; r >= 0; r--) {
         for (int8_t f = 0; f < 8; f++) {
@@ -295,174 +165,6 @@ int EvaluateBoard(const Board& board) {
     return score;
 }
 
-#define GEN_MOVE(target) moves.push_back({ from, target, board(from), board(target) })
-
-void GeneratePawnMoves(const Board& board, std::vector<Move>& moves, Square from) {
-    auto up1 = from.Add(1, 0);
-    if (board.IsEmpty(up1)) {
-        if (from.rank == 6) {
-            // Special treat promotion
-        }
-        moves.push_back({ from, up1 });
-        if (from.rank == 1) {
-            auto up2 = up1.Add(1, 0);
-            if (board(up2) == Piece::NO_PIECE)
-                GEN_MOVE(up2);
-        }
-    }
-
-    // Capturing moves
-    if (from.file > 0) {
-        auto left = up1.Add(0, -1);
-        if (board.HasEnemy(left)) {
-            GEN_MOVE(left);
-        }
-    }
-    if (from.file < 7) {
-        auto right = up1.Add(0, 1);
-        if (board.HasEnemy(right)) {
-            GEN_MOVE(right);
-        }
-    }
-}
-
-Direction knightMoves[8] = {
-    {-1, -2},
-    {-2, -1},
-    {1, -2},
-    {2, -1},
-    {1, 2},
-    {2, 1},
-    {-1, 2},
-    {-2, 1}
-};
-
-void GenerateKnightMoves(const Board& board, std::vector<Move>& moves, Square from) {
-    for (int i = 0; i < 8; i++) {
-        auto to = from.Add(knightMoves[i]);
-        if (to.IsValid() && !board.HasFriend(to)) {
-
-            //std::cout << from << " > " << to << "\n";
-            //auto& km = knightMoves[i];
-            //std::cout << (int)km.vertical << ", " << (int)km.horizontal << "\n";
-
-            GEN_MOVE(to);
-        }
-    }
-}
-
-Direction bishopDirections[] = {
-    {-1, -1},
-    {1, -1},
-    {1, 1},
-    {-1, 1}
-};
-
-void GenerateBishopMoves(const Board& board, std::vector<Move>& moves, Square from) {
-    for (int i = 0; i < 4; i++) {
-        auto direction = bishopDirections[i];
-        auto to = from;
-        while (true) {
-            to = to.Add(direction);
-            if (!to.IsValid()) break;
-            if (board.HasFriend(to)) break;
-            GEN_MOVE(to);
-            if (board.HasEnemy(to)) break;
-        }
-    }
-}
-
-Direction rookDirections[] = {
-    {0, 1},
-    {1, 0},
-    {-1, 0},
-    {0, -1}
-};
-
-void GenerateRookMoves(const Board& board, std::vector<Move>& moves, Square from) {
-    for (int i = 0; i < 4; i++) {
-        auto direction = rookDirections[i];
-        auto to = from;
-        while (true) {
-            to = to.Add(direction);
-            if (!to.IsValid()) break;
-            if (board.HasFriend(to)) break;
-            GEN_MOVE(to);
-            if (board.HasEnemy(to)) break;
-        }
-    }
-}
-
-void GenerateQueenMoves(const Board& board, std::vector<Move>& moves, Square from) {
-    GenerateBishopMoves(board, moves, from);
-    GenerateRookMoves(board, moves, from);
-}
-
-Direction kingDirections[] = {
-    {0, 1},
-    {1, 0},
-    {-1, 0},
-    {0, -1},
-    {-1, -1},
-    {1, -1},
-    {1, 1},
-    {-1, 1}
-};
-
-void GenerateKingMoves(const Board& board, std::vector<Move>& moves, Square from) {
-    for (int i = 0; i < 8; i++) {
-        Square to = from.Add(kingDirections[i]);
-        if (to.IsValid() && !board.HasFriend(to)) {
-            GEN_MOVE(to);
-        }
-    }
-    //Castling
-    if (from == Square {0, 4}) {
-        if (board({ 0, 0 }) == Piece::MY_ROOK
-            && board({ 0, 1 }) == Piece::NO_PIECE
-            && board({ 0, 2 }) == Piece::NO_PIECE
-            && board({ 0, 3 }) == Piece::NO_PIECE) {
-            Square to = { 0, 2 };
-            GEN_MOVE(to);
-        }
-        if (board({ 0, 7 }) == Piece::MY_ROOK
-            && board({ 0, 5 }) == Piece::NO_PIECE
-            && board({ 0, 6 }) == Piece::NO_PIECE) {
-            Square to = { 0, 6 };
-            GEN_MOVE(to);
-        }
-    }
-
-}
-
-void GenerateMoves(const Board& board, std::vector<Move>& moves) {
-    for (int8_t r = 7; r >= 0; r--) {
-        for (int8_t f = 0; f < 8; f++) {
-            auto square = Square { r, f };
-            switch (board(square)) {
-            case Piece::MY_PAWN:
-                GeneratePawnMoves(board, moves, square);
-                break;
-            case Piece::MY_ROOK:
-                GenerateRookMoves(board, moves, square);
-                break;
-            case Piece::MY_KNIGHT:
-                GenerateKnightMoves(board, moves, square);
-                break;
-            case Piece::MY_BISHOP:
-                GenerateBishopMoves(board, moves, square);
-                break;
-            case Piece::MY_QUEEN:
-                GenerateQueenMoves(board, moves, square);
-                break;
-            case Piece::MY_KING:
-                GenerateKingMoves(board, moves, square);
-                break;
-            }
-        }
-    }
-}
-
 void ApplyMove(Board& board, const Move& move) {
     // Apply castling move
     if (board(move.from) == Piece::MY_KING && move.from == Square{ 0, 4 }) {
@@ -484,7 +186,6 @@ void ApplyMove(Board& board, const Move& move) {
         board(move.to) = Piece::MY_QUEEN;
 }
 
-constexpr int MAX_SCORE = 1000000;
 
 int MinMax(Board& board, int depth, int alpha, int beta) {
     if (depth == 0) {
@@ -493,22 +194,15 @@ int MinMax(Board& board, int depth, int alpha, int beta) {
     std::vector<Move> moves;
     GenerateMoves(board, moves);
 
-    std::sort(moves.begin(), moves.end(), [](const Move& a, const Move& b) {
-        if (a.capture > b.capture)
-            return 1;
-        if (a.capture < b.capture)
-            return -1;
-        if (a.piece > b.piece)
-            return 1;
-        if (a.piece < b.piece)
-            return -1;
-        return 0;
-        });
+    std::vector<int> indices(moves.size());
+    std::iota(indices.begin(), indices.end(), 0);
 
+    OrderMoves(board, moves, indices);
 
     auto maxScore = -MAX_SCORE;
 
-    for (const auto& move : moves) {
+    for (const auto& index : indices) {
+        auto& move = moves[index];
         // Search no further if king was captured
         if (board(move.to) == Piece::ENEMY_KING) 
             return MAX_SCORE;
@@ -588,7 +282,6 @@ void ParseBoard(Board& board, const std::string& str) {
 
     for (int i = 0; i < 64; i++) {
         char c = str[i];
-
         auto piece = Piece::NO_PIECE;
 
         switch (c) {
@@ -659,7 +352,9 @@ void PlayLoop() {
         std::cout << board;
 
         board.Invert();
+        numEvaluates = 0;
         move = FindBestMove(board, 5);
+        std::cout << "Evaluated " << numEvaluates << " nodes\n";
         ApplyMove(board, move);
         board.Invert();
         std::cout << board;
