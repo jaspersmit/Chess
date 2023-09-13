@@ -5,6 +5,7 @@
 #include <cassert>
 
 #include "Board.h"
+#include "Evaluate.h"
 #include "Move.h"
 #include "MoveGenerator.h"
 #include "MoveOrder.h"
@@ -104,66 +105,9 @@ std::ostream& operator<<(std::ostream& o, const Move& move) {
     return o << move.from << " -> " << move.to;
 }
 
-int numEvaluates = 0;
 
-int EvaluateBoard(const Board& board) {
-    numEvaluates++;
-    int score = 0;
-    for (int8_t r = 7; r >= 0; r--) {
-        for (int8_t f = 0; f < 8; f++) {
-            switch (board({r, f})) {
-            case Piece::NO_PIECE:
-                break;
-            case Piece::WHITE_PAWN:
-                score += 1;
-                break;
-            case Piece::WHITE_ROOK:
-                score += 5;
-                break;
-            case Piece::WHITE_KNIGHT:
-                score += 3;
-                break;
-            case Piece::WHITE_BISHOP:
-                score += 3;
-                break;
-            case Piece::WHITE_QUEEN:
-                score += 9;
-                break;
-            case Piece::WHITE_KING:
-                score += 1000000;
-                break;
-            case Piece::BLACK_PAWN:
-                score -= 1;
-                break;
-            case Piece::BLACK_ROOK:
-                score -= 5;
-                break;
-            case Piece::BLACK_KNIGHT:
-                score -= 3;
-                break;
-            case Piece::BLACK_BISHOP:
-                score -= 3;
-                break;
-            case Piece::BLACK_QUEEN:
-                score -= 9;
-                break;
-            case Piece::BLACK_KING:
-                score -= 1000000;
-                break;
-            }
-        }
-    }
+extern int numEvaluates;
 
-    // check center squares
-    for(int8_t rank = 3; rank <= 4; rank++)
-        for (int8_t file = 3; file <= 4; file++) {
-            auto square = Square{ rank, file };
-            if (board.IsBlack(square)) score--;
-            if (board.IsWhite(square)) score++;
-        }
-
-    return static_cast<int>(board.GetTurn()) * score;
-}
 
 int MinMax(Board& board, int depth, int alpha, int beta) {
     if (depth == 0) {
@@ -207,17 +151,13 @@ Move FindBestMove(Board& board, int depth) {
     for (const auto& move : moves) {
         Board nextBoard = board;
         nextBoard.ApplyMove(move);
-        //std::cout << nextBoard << "\n";
         nextBoard.SwitchTurn();
-        //std::cout << "Inverted:\n";
-        //std::cout << nextBoard << "\n\n\n";
         auto score = -MinMax(nextBoard, depth - 1, -1000000, 1000000);
-        //std::cout << score << "\n";
         if (score > maxScore) {
             maxScore = score;
             maxMove = move;
         }
-        std::cout << move << " score: " << score << "\n";
+        //std::cout << move << " score: " << score << "\n";
     }
 
     std::cout << "Score " << maxScore << "\n";
@@ -337,15 +277,32 @@ void PlayLoop() {
         board.SwitchTurn();
         std::cout << board;
     }
-
 }
+
+void PlayComputerVsComputer() {
+    Board board;
+    SetDefaultBoard(board);
+
+    std::cout << board;
+    while (true) {
+        numEvaluates = 0;
+        auto move = FindBestMove(board, 5);
+        //std::cout << "Evaluated " << numEvaluates << " nodes\n";
+        board.ApplyMove(move);
+        board.SwitchTurn();
+        std::cout << board;
+    }
+}
+
 
 int main()
 {
+    Board board;
+
     PlayLoop();
+    //PlayComputerVsComputer();
     //std::cout << "Hello World!\n";
 
-    Board board;
     ParseBoard(board,
         "Q...K..."
         "PPPPPPPP"

@@ -132,6 +132,7 @@
   <ItemGroup>
     <ClCompile Include="Board.cpp" />
     <ClCompile Include="Chess.cpp" />
+    <ClCompile Include="Evaluate.cpp" />
     <ClCompile Include="MoveGenerator.cpp" />
     <ClCompile Include="MoveOrder.cpp" />
     <ClCompile Include="Piece.cpp" />
@@ -139,6 +140,7 @@
   <ItemGroup>
     <ClInclude Include="Board.h" />
     <ClInclude Include="Direction.h" />
+    <ClInclude Include="Evaluate.h" />
     <ClInclude Include="Move.h" />
     <ClInclude Include="MoveGenerator.h" />
     <ClInclude Include="MoveOrder.h" />
