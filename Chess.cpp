@@ -10,6 +10,7 @@
 #include "MoveGenerator.h"
 #include "MoveOrder.h"
 #include "Piece.h"
+#include "Zobrist.h"
 
 
 Move INVALID_MOVE = { {0,0}, {0,0} };
@@ -294,15 +295,74 @@ void PlayComputerVsComputer() {
     }
 }
 
+void PlayHumanVsHuman() {
+    Board board;
+    SetDefaultBoard(board);
+
+    std::cout << board;
+    while (true) {
+        auto move = INVALID_MOVE;
+        while (move == INVALID_MOVE) {
+            std::cout << "Your move: ";
+            std::string moveString;
+            std::cin >> moveString;
+            move = ParseMove(moveString);
+            if (!IsMoveValid(board, move)) {
+                std::cout << "Invalid move\n";
+                move = INVALID_MOVE;
+            }
+        }
+        std::cout << "Your move " << move << "\n";
+        board.ApplyMove(move);
+        board.SwitchTurn();
+        std::cout << board;
+        std::cout << "Hash " << board.GetHash() << "\n";
+    }
+}
+
+
+void Simulate() {
+    Board board;
+    SetDefaultBoard(board);
+
+    std::cout << board;
+    std::cout << "Hash " << board.GetHash() << "\n\n\n";
+
+    const char* moves[4] = {"G1F3", "G8F6", "F3G1", "F6G8"};
+
+    for (int i = 0; i < 4; i++) {
+        auto move = ParseMove(moves[i]);
+        std::cout << "m " << moves[i] << "\n";
+        if (!IsMoveValid(board, move)) {
+            std::cout << "Invalid move\n";
+        }
+            board.ApplyMove(move);
+            board.SwitchTurn();
+            std::cout << board;
+            std::cout << "Hash " << board.GetHash() << "\n";
+    }
+}
+
+
+
+
 
 int main()
 {
-    Board board;
 
-    PlayLoop();
+
+
+    
+
+    Simulate();
+    exit(0);
+    //PlayLoop();
+    //PlayHumanVsHuman();
     //PlayComputerVsComputer();
     //std::cout << "Hello World!\n";
 
+
+    Board board;
     ParseBoard(board,
         "Q...K..."
         "PPPPPPPP"

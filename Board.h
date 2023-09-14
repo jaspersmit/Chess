@@ -81,23 +81,18 @@ public:
         return turn;
     }
 
+    auto GetHash() const -> uint64_t {
+        return hash;
+    }
+
     void ApplyMove(const Move& move);
 
     void SwitchTurn() {
         turn = InvertColor(turn);
     }
 
-    void Invertxx() {
-        for (int i1 = 0; i1 < 32; i1++) {
-            auto i2 = 63 - i1;
-            auto p1 = InvertPiece(pieces[i1]);
-            auto p2 = InvertPiece(pieces[i2]);
-            pieces[i2] = p1;
-            pieces[i1] = p2;
-        }
-    }
-
 private:
     Piece pieces[64];
     Color turn = Color::WHITE;
+    uint64_t hash = 0;
 };
