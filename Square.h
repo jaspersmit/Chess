@@ -9,7 +9,7 @@ public:
     int8_t rank;
     int8_t file;
 
-    Square(int8_t rank, int8_t file) :
+    constexpr Square(int8_t rank, int8_t file) :
         rank(rank), file(file) {
 
     }

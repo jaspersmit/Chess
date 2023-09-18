@@ -11,3 +11,5 @@ public:
         return other.from == from && other.to == to;
     }
 };
+
+constexpr Move INVALID_MOVE = { {0,0}, {0,0} };

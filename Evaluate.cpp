@@ -1,13 +1,12 @@
 
+#include <array>
+
 #include "Evaluate.h"
-
-int numEvaluates;
-
 
 int Pawns[] = {
 	0,   0,   0,   0,   0,   0,   0,   0,
-50,  50,  50,  50,  50,  50,  50,  50,
-10,  10,  20,  30,  30,  20,  10,  10,
+    50,  50,  50,  50,  50,  50,  50,  50,
+    10,  10,  20,  30,  30,  20,  10,  10,
 	5,   5,  10,  25,  25,  10,   5,   5,
 	0,   0,   0,  20,  20,   0,   0,   0,
 	5,  -5, -10,   0,   0, -10,  -5,   5,
@@ -66,7 +65,7 @@ int Kings[] = {
     10, 0, 0, 10, 30, 20
 };
 
-int pieceLookup[13 * 64];
+std::array<int, 13 * 64> pieceLookup;
 
 int CopyInvert(int index, int* sourceTable) {
     for (int i = 0; i < 64; i++) {
@@ -82,7 +81,7 @@ int CopyInvert(int index, int* sourceTable) {
 
 int Copy(int index, int* sourceTable) {
     for (int i = 0; i < 64; i++) {
-        pieceLookup[index] = sourceTable[i];
+        pieceLookup[index] = -sourceTable[i];
         index++;
     }
     return index;
@@ -92,10 +91,11 @@ int CreatePieceLookup() {
     int index = 0;
 
     // NO_PIECE
-    for (int i = 0; i < 64; i++) {
-        pieceLookup[index] = 0;
-        index++;
+    for (int i = 0; i < 64 * 13; i++) {
+        pieceLookup[i] = 0;
     }
+
+    index = 64;
 
     assert(static_cast<int>(Piece::WHITE_PAWN) == index / 64);
     index = CopyInvert(index, Pawns);
@@ -142,7 +142,6 @@ int pieceLookupInitialized = CreatePieceLookup();
 #include <iostream>
 
 int EvaluateBoard(const Board& board) {
-    numEvaluates++;
     int score = 0;
     for (int8_t r = 7; r >= 0; r--) {
         for (int8_t f = 0; f < 8; f++) {

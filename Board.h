@@ -6,6 +6,7 @@
 #include "Square.h"
 #include "Move.h"
 #include "Piece.h"
+#include "Zobrist.h"
 
 constexpr int MAX_SCORE = 1000000;
 
@@ -85,14 +86,27 @@ public:
         return hash;
     }
 
+    inline void SetSquare(Square square, Piece piece) {
+        auto existingPiece = (*this)(square);
+        if (piece == existingPiece) return;
+        if (existingPiece != Piece::NO_PIECE) {
+            hash ^= GetZobristHash(square, existingPiece);
+        }
+        if (piece != Piece::NO_PIECE) {
+            hash ^= GetZobristHash(square, piece);
+        }
+        (*this)(square) = piece;
+    }
+
     void ApplyMove(const Move& move);
 
     void SwitchTurn() {
         turn = InvertColor(turn);
+        hash ^= turnHash;
     }
 
 private:
-    Piece pieces[64];
+    Piece pieces[64] = {};
     Color turn = Color::WHITE;
     uint64_t hash = 0;
 };

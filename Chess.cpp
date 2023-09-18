@@ -10,10 +10,10 @@
 #include "MoveGenerator.h"
 #include "MoveOrder.h"
 #include "Piece.h"
+#include "TranspositionTable.h"
 #include "Zobrist.h"
 
 
-Move INVALID_MOVE = { {0,0}, {0,0} };
 
 void SetDefaultBoard(Board& board) {
     for (int8_t r = 0; r < 8; r++)
@@ -107,22 +107,115 @@ std::ostream& operator<<(std::ostream& o, const Move& move) {
 }
 
 
-extern int numEvaluates;
+int numEvaluates;
+int numCacheHits;
+int numCacheMisses;
+
+int searchDepth = 6;
+
+
+int QuiescenceSearch(Board& board, int depth, int alpha, int beta) {
+    std::vector<Move> moves;
+    GenerateMoves(board, moves);
+
+    auto entry = GetEntry(board.GetHash());
+    auto hashMove = INVALID_MOVE;
+    if (entry->hash == board.GetHash() && entry->depth >= depth) {
+        numCacheHits++;
+        hashMove = entry->bestMove;
+        if (entry->bound == Bound::EXACT) {
+            return entry->score;
+        }
+        if (entry->bound == Bound::LOWER_BOUND && entry->score >= beta) {
+            return beta;
+        }
+    }
+    else {
+        numCacheMisses++;
+    }
+
+    std::vector<int> indices(moves.size());
+    std::iota(indices.begin(), indices.end(), 0);
+
+    OrderMoves(board, moves, indices, hashMove);
+
+    auto maxScore = EvaluateBoard(board);
+    auto bestMove = INVALID_MOVE;
+    auto bound = Bound::UPPER_BOUND;
+
+    for (const auto& index : indices) {
+        auto& move = moves[index];
+        // Search no further if king was captured
+        if (board(move.to) == Piece::BLACK_KING)
+            return MAX_SCORE;
+
+        if (board.IsEmpty(move.to)) continue;
+
+        Board nextBoard = board;
+        nextBoard.ApplyMove(move);
+        nextBoard.SwitchTurn();
+        auto score = -QuiescenceSearch(nextBoard, depth - 1, -beta, -alpha);
+
+        if (score > alpha) {
+            bound = Bound::EXACT;
+            alpha = score;
+        }
+        if (score >= beta) {
+            entry->depth = depth;
+            entry->hash = board.GetHash();
+            entry->bound = Bound::LOWER_BOUND;
+            entry->bestMove = move;
+            entry->score = score;
+            return beta;
+        }
+        if (score > maxScore) {
+            maxScore = score;
+        }
+    }
+
+    entry->depth = depth;
+    entry->hash = board.GetHash();
+    entry->bound = bound;
+    entry->bestMove = bestMove;
+    entry->score = maxScore;
+
+    return maxScore;
+}
 
 
 int MinMax(Board& board, int depth, int alpha, int beta) {
     if (depth == 0) {
-        return EvaluateBoard(board);
+        numEvaluates++;
+        return QuiescenceSearch(board, 0, alpha, beta);
     }
+
+    auto entry = GetEntry(board.GetHash());
+    auto hashMove = INVALID_MOVE;
+    if (entry->hash == board.GetHash() && entry->depth >= depth) {
+        numCacheHits++;
+        hashMove = entry->bestMove;
+        if (entry->bound == Bound::EXACT) {
+            return entry->score;
+        }
+        if (entry->bound == Bound::LOWER_BOUND && entry->score >= beta) {
+            return beta;
+        }
+    }
+    else {
+        numCacheMisses++;
+    }
+
     std::vector<Move> moves;
     GenerateMoves(board, moves);
 
     std::vector<int> indices(moves.size());
     std::iota(indices.begin(), indices.end(), 0);
 
-    OrderMoves(board, moves, indices);
+    OrderMoves(board, moves, indices, hashMove);
 
     auto maxScore = -MAX_SCORE;
+    auto bestMove = INVALID_MOVE;
+    auto bound = Bound::UPPER_BOUND;
 
     for (const auto& index : indices) {
         auto& move = moves[index];
@@ -134,35 +227,47 @@ int MinMax(Board& board, int depth, int alpha, int beta) {
         nextBoard.ApplyMove(move);
         nextBoard.SwitchTurn();
         auto score = -MinMax(nextBoard, depth - 1, -beta, -alpha);
-        if (score > alpha) alpha = score;
-        if (score > beta) return beta;
-        if (score > maxScore) maxScore = score;
+
+        if (depth == searchDepth) {
+            std::cout << depth << " " << move << " " << score << "\n";
+        }
+
+        if (score > alpha) {
+            bound = Bound::EXACT;
+            alpha = score;
+        }
+        if (score >= beta) {
+            entry->depth = depth;
+            entry->hash = board.GetHash();
+            entry->bound = Bound::LOWER_BOUND;
+            entry->bestMove = move;
+            entry->score = score;
+            return beta;
+        }
+        if (score > maxScore) {
+            maxScore = score;
+            bestMove = move;
+        }
     }
+
+    entry->depth = depth;
+    entry->hash = board.GetHash();
+    entry->bound = bound;
+    entry->bestMove = bestMove;
+    entry->score = maxScore;
 
     return maxScore;
 }
 
 Move FindBestMove(Board& board, int depth) {
-    std::vector<Move> moves;
-    GenerateMoves(board, moves);
+    numEvaluates = 0;
+    numCacheHits = 0;
+    numCacheMisses = 0;
 
-    auto maxMove = Move{ {0, 0},  {0, 0} };
-    auto maxScore = -MAX_SCORE;
-
-    for (const auto& move : moves) {
-        Board nextBoard = board;
-        nextBoard.ApplyMove(move);
-        nextBoard.SwitchTurn();
-        auto score = -MinMax(nextBoard, depth - 1, -1000000, 1000000);
-        if (score > maxScore) {
-            maxScore = score;
-            maxMove = move;
-        }
-        //std::cout << move << " score: " << score << "\n";
-    }
-
-    std::cout << "Score " << maxScore << "\n";
-    return maxMove;
+    MinMax(board, depth, -1000000, 1000000);
+    auto entry = GetEntry(board.GetHash());
+    assert(entry->hash == board.GetHash());
+    return entry->bestMove;
 }
 
 auto ParseFile(char f) -> int8_t {
@@ -271,11 +376,13 @@ void PlayLoop() {
 
         std::cout << board;
 
-        numEvaluates = 0;
-        move = FindBestMove(board, 5);
+
+        move = FindBestMove(board, searchDepth);
         std::cout << "Evaluated " << numEvaluates << " nodes\n";
+        std::cout << "Cache hits " << numCacheHits << ", misses " << numCacheMisses << "\n";
         board.ApplyMove(move);
         board.SwitchTurn();
+        std::cout << "Computer played " << move << "\n";
         std::cout << board;
     }
 }
@@ -287,7 +394,7 @@ void PlayComputerVsComputer() {
     std::cout << board;
     while (true) {
         numEvaluates = 0;
-        auto move = FindBestMove(board, 5);
+        auto move = FindBestMove(board, 6);
         //std::cout << "Evaluated " << numEvaluates << " nodes\n";
         board.ApplyMove(move);
         board.SwitchTurn();
@@ -350,32 +457,8 @@ void Simulate() {
 int main()
 {
 
-
-
-    
-
-    Simulate();
-    exit(0);
-    //PlayLoop();
+    PlayLoop();
     //PlayHumanVsHuman();
     //PlayComputerVsComputer();
     //std::cout << "Hello World!\n";
-
-
-    Board board;
-    ParseBoard(board,
-        "Q...K..."
-        "PPPPPPPP"
-        "........"
-        "........"
-        "...N...."
-        "........"
-        "pppppppp"
-        "q...k..."
-    );
-
-
-
-    std::cout << board << "\n";
-    std::cout << "Best move " << FindBestMove(board, 5) << "\n";
 }

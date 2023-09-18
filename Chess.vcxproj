@@ -136,6 +136,7 @@
     <ClCompile Include="MoveGenerator.cpp" />
     <ClCompile Include="MoveOrder.cpp" />
     <ClCompile Include="Piece.cpp" />
+    <ClCompile Include="TranspositionTable.cpp" />
     <ClCompile Include="Zobrist.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -147,6 +148,7 @@
     <ClInclude Include="MoveOrder.h" />
     <ClInclude Include="Piece.h" />
     <ClInclude Include="Square.h" />
+    <ClInclude Include="TranspositionTable.h" />
     <ClInclude Include="Zobrist.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
