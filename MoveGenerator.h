@@ -6,3 +6,4 @@
 #include "Move.h"
 
 void GenerateMoves(const Board& board, std::vector<Move>& moves);
+auto IsInCheck(Board& board) -> bool;

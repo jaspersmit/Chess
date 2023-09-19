@@ -110,3 +110,5 @@ private:
     Color turn = Color::WHITE;
     uint64_t hash = 0;
 };
+
+void ParseBoard(Board& board, const std::string& str);

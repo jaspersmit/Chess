@@ -1,5 +1,7 @@
 #pragma once
 
+#include <ostream>
+
 #include "Square.h"
 
 class Move {
@@ -13,3 +15,7 @@ public:
 };
 
 constexpr Move INVALID_MOVE = { {0,0}, {0,0} };
+
+inline std::ostream& operator<<(std::ostream& o, const Move& move) {
+    return o << move.from << " -> " << move.to;
+}

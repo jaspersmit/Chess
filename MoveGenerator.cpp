@@ -136,6 +136,21 @@ void GenerateKingMoves(const Board& board, std::vector<Move>& moves, Square from
             GEN_MOVE(to);
         }
     }
+    if (from == Square{ 7, 4 }) {
+        if (board({ 7, 0 }) == Piece::BLACK_ROOK
+            && board({ 7, 1 }) == Piece::NO_PIECE
+            && board({ 7, 2 }) == Piece::NO_PIECE
+            && board({ 7, 3 }) == Piece::NO_PIECE) {
+            Square to = { 7, 2 };
+            GEN_MOVE(to);
+        }
+        if (board({ 7, 7 }) == Piece::BLACK_ROOK
+            && board({ 7, 5 }) == Piece::NO_PIECE
+            && board({ 7, 6 }) == Piece::NO_PIECE) {
+            Square to = { 7, 6 };
+            GEN_MOVE(to);
+        }
+    }
 }
 
 void GenerateMoves(const Board& board, std::vector<Move>& moves) {
@@ -189,3 +204,19 @@ void GenerateMoves(const Board& board, std::vector<Move>& moves) {
         }
     }
 }
+
+auto IsInCheck(Board& board) -> bool {
+    board.SwitchTurn();
+    std::vector<Move> moves;
+    GenerateMoves(board, moves);
+    for (auto& move : moves) {
+        if (board.GetTurn() == Color::WHITE && board(move.to) == Piece::BLACK_KING ||
+            board.GetTurn() == Color::BLACK && board(move.to) == Piece::WHITE_KING) {
+            board.SwitchTurn();
+            return true;
+        }
+    }
+    board.SwitchTurn();
+    return false;
+}
+

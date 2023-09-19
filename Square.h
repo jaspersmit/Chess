@@ -34,3 +34,7 @@ public:
         return rank >= 0 && rank < 8 && file >= 0 && file < 8;
     }
 };
+
+inline std::ostream& operator<<(std::ostream& o, const Square& square) {
+    return o << static_cast<char>('A' + square.file) << (square.rank + 1);
+}
