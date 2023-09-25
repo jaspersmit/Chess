@@ -26,18 +26,6 @@ void SetDefaultBoard(Board& board) {
         "pppppppp"
         "rnbqkbnr"
     );
-
-
-    ParseBoard(board,
-        "........"
-        "........"
-        "........"
-        "...K...."
-        "..R....."
-        "...k...."
-        "........"
-        "........"
-    );
 }
 
 std::ostream& operator<<(std::ostream& o, Piece piece) {
@@ -95,42 +83,6 @@ std::ostream& operator<<(std::ostream& o, const Board& board) {
     return o;
 }
 
-auto ParseFile(char f) -> int8_t {
-    if (f < 'A' || f > 'H') return -1;
-    return f - 'A';
-}
-
-auto ParseRank(char f) -> int8_t {
-    if (f < '1' || f > '8') return -1;
-    return f - '1';
-}
-
-auto ParseMove(const std::string& moveString) -> Move {
-    if (moveString.length() < 4) return INVALID_MOVE;
-    auto f1 = ParseFile(moveString[0]);
-    auto r1 = ParseRank(moveString[1]);
-    auto f2 = ParseFile(moveString[2]);
-    auto r2 = ParseRank(moveString[3]);
-    if (f1 == -1 || r1 == -1 || f2 == -1 || r2 == -1) return INVALID_MOVE;
-    return { {r1,f1}, {r2, f2} };
-}
-
-auto IsMoveValid(const Board& board, const Move& move) -> bool {
-    std::vector<Move> moves;
-    GenerateMoves(board, moves);
-    bool found = false;
-    for (const Move& m : moves) {
-        if (m == move) found = true;
-    }
-    if (!found) return false;
-    // We cannot set ourselves in check
-    auto testBoard = board;
-    testBoard.ApplyMove(move);
-    return !IsInCheck(testBoard);
-}
-
-
-
 struct Config {
     bool ComputerPlaysWhite = false;
     bool ComputerPlaysBlack = false;
@@ -165,7 +117,8 @@ void PlayLoop(Config config) {
             board.ApplyMove(move);
         }
         else {
-            auto move = FindBestMove(board);
+            auto move = FindBestMoveInTime(board);
+            std::cout << "Depth reached " << depthReached << "\n";
             std::cout << "Evaluated " << numEvaluates << " nodes\n";
             std::cout << "Cache hits " << numCacheHits << ", misses " << numCacheMisses << "\n";
             board.ApplyMove(move);
@@ -196,6 +149,9 @@ void PlayComputerVsHuman() {
     PlayLoop({ true, false });
 }
 
+void Test();
+
 int main() {
+    Test();
     PlayHumanVsComputer();
 }

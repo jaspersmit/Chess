@@ -133,10 +133,12 @@
     <ClCompile Include="Board.cpp" />
     <ClCompile Include="Chess.cpp" />
     <ClCompile Include="Evaluate.cpp" />
+    <ClCompile Include="Move.cpp" />
     <ClCompile Include="MoveGenerator.cpp" />
     <ClCompile Include="MoveOrder.cpp" />
     <ClCompile Include="Piece.cpp" />
     <ClCompile Include="Search.cpp" />
+    <ClCompile Include="Test.cpp" />
     <ClCompile Include="TranspositionTable.cpp" />
     <ClCompile Include="Zobrist.cpp" />
   </ItemGroup>

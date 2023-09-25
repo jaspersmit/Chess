@@ -19,3 +19,5 @@ constexpr Move INVALID_MOVE = { {0,0}, {0,0} };
 inline std::ostream& operator<<(std::ostream& o, const Move& move) {
     return o << move.from << " -> " << move.to;
 }
+
+auto ParseMove(const std::string& moveString) -> Move;

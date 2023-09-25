@@ -10,13 +10,14 @@
 int numEvaluates;
 int numCacheHits;
 int numCacheMisses;
+int depthReached;
 
-int searchDepth = 14;
+int searchDepth = 8;
+volatile bool searchRunning = false;
+auto bestMoveSoFar = INVALID_MOVE;
+
 
 auto QuiescenceSearch(Board& board, int depth, int alpha, int beta) -> int {
-    std::vector<Move> moves;
-    GenerateMoves(board, moves);
-
     auto entry = GetEntry(board.GetHash());
     auto hashMove = INVALID_MOVE;
     if (entry->hash == board.GetHash()) {
@@ -35,6 +36,8 @@ auto QuiescenceSearch(Board& board, int depth, int alpha, int beta) -> int {
         numCacheMisses++;
     }
 
+    std::vector<Move> moves;
+    GenerateMoves(board, moves);
     std::vector<int> indices(moves.size());
     std::iota(indices.begin(), indices.end(), 0);
 
@@ -112,6 +115,10 @@ auto MinMax(Board& board, int depth, int alpha, int beta) -> int {
 
     std::vector<Move> moves;
     GenerateMoves(board, moves);
+    if (moves.size() == 0) {
+        return 0;
+    }
+
 
     std::vector<int> indices(moves.size());
     std::iota(indices.begin(), indices.end(), 0);
@@ -133,6 +140,11 @@ auto MinMax(Board& board, int depth, int alpha, int beta) -> int {
         nextBoard.ApplyMove(move);
         nextBoard.SwitchTurn();
         auto score = -MinMax(nextBoard, depth - 1, -beta, -alpha);
+
+        if (!searchRunning) {
+            // Search aborted, return value is garbage when search is aborted
+            return 0;
+        }
 
         //Adjust score for number of moves
         if (score > MAX_SCORE - 128) score--;
@@ -156,6 +168,23 @@ auto MinMax(Board& board, int depth, int alpha, int beta) -> int {
         if (score > maxScore) {
             maxScore = score;
             bestMove = move;
+            if (depth == searchDepth) {
+                bestMoveSoFar = move;
+            }
+        }
+    }
+
+    if (maxScore == -MAX_SCORE) {
+        // The enemy can take my king next turn
+        // If he can take it now, then we are in mate
+        auto nextBoard = board;
+        nextBoard.SwitchTurn();
+        if (-MinMax(nextBoard, 1, -beta, -alpha) == -MAX_SCORE) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       return -MAX_SCORE;
+        }
+        else {
+            // Otherwise it is stale mate
+            return 0;
         }
     }
 
@@ -172,21 +201,34 @@ auto FindBestMove(Board& board) -> Move {
     numEvaluates = 0;
     numCacheHits = 0;
     numCacheMisses = 0;
-
     MinMax(board, searchDepth, -1000000, 1000000);
     auto entry = GetEntry(board.GetHash());
     assert(entry->hash == board.GetHash());
     return entry->bestMove;
 }
 
+auto SearchInThread(Board board) {
+    searchDepth = 1;
+    while (searchRunning) {
+        searchDepth++;
+        MinMax(board, searchDepth, -1000000, 1000000);
+    }
+    depthReached = searchDepth;
+}
+
 auto FindBestMoveInTime(Board& board) -> Move {
     numEvaluates = 0;
     numCacheHits = 0;
     numCacheMisses = 0;
+    depthReached = 1;
     MinMax(board, searchDepth, -1000000, 1000000);
 
-
+    searchRunning = true;
+    std::thread t([&]() { SearchInThread(board); });
     std::this_thread::sleep_for(std::chrono::seconds(10));
+    searchRunning = false;
+    t.join();
+    return bestMoveSoFar;
 }
 
 // This might somewhat kill the hash?
