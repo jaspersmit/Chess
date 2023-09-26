@@ -8,7 +8,7 @@ extern int numEvaluates;
 extern int numCacheHits;
 extern int numCacheMisses;
 
-auto MinMax(Board& board, int depth, int alpha, int beta)->int;
-auto FindBestMove(Board& board)->Move;
-auto FindBestMoveInTime(Board& board) -> Move;
-auto IsInMate(Board& board) -> bool;
+auto MinMax(int depth, int alpha, int beta)->int;
+auto FindBestMove()->Move;
+auto FindBestMoveInTime() -> Move;
+auto IsInMate() -> bool;

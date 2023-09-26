@@ -1,5 +1,18 @@
+#include <vector>
+
 #include "Board.h"
 #include "Zobrist.h"
+
+struct HistoricMove {
+    Square from;
+    Square to;
+    Piece capturedPiece;
+    bool promotion;
+};
+
+std::vector<HistoricMove> history;
+
+Board theBoard;
 
 void Board::ApplyMove(const Move& move) {
     // Apply castling move
@@ -38,6 +51,102 @@ void Board::ApplyMove(const Move& move) {
     if (move.to.rank == 0 && (*this)(move.to) == Piece::BLACK_PAWN)
         SetSquare(move.to, Piece::BLACK_QUEEN);
 }
+
+void DoMove(const Move& move) {
+    // Apply castling move
+    Piece king;
+    Piece rook;
+    Piece pawn;
+    Piece queen;
+    int8_t kingRank;
+    if (theBoard.GetTurn() == Color::WHITE) {
+        king = Piece::WHITE_KING;
+        rook = Piece::WHITE_ROOK;
+        pawn = Piece::WHITE_PAWN;
+        queen = Piece::WHITE_QUEEN;
+        kingRank = 0;
+    }
+    else {
+        king = Piece::BLACK_KING;
+        rook = Piece::BLACK_ROOK;
+        pawn = Piece::BLACK_PAWN;
+        queen = Piece::BLACK_QUEEN;
+        kingRank = 7;
+    }
+
+    if (theBoard(move.from) == king && move.from == Square{ kingRank, 4 }) {
+        if (move.to == Square{ kingRank, 2 }) {
+            //Move rook
+            theBoard.SetSquare({ kingRank, 0 }, Piece::NO_PIECE);
+            theBoard.SetSquare({ kingRank, 3 }, rook);
+        }
+        if (move.to == Square{ 0, 6 }) {
+            //Move rook
+            theBoard.SetSquare({ kingRank, 7 }, Piece::NO_PIECE);
+            theBoard.SetSquare({ kingRank, 5 }, rook);
+        }
+    }
+
+    auto piece = theBoard(move.from);
+    auto capturedPiece = theBoard(move.to);
+
+    theBoard.SetSquare(move.from, Piece::NO_PIECE);
+    theBoard.SetSquare(move.to, piece);
+
+    auto promotion = false;
+    if (move.to.rank == (7 - kingRank) && theBoard(move.to) == pawn) {
+        theBoard.SetSquare(move.to, queen);
+        promotion = true;
+    }
+
+    history.emplace_back(move.from, move.to, capturedPiece, promotion);
+}
+
+void UndoMove() {
+    auto move = history.back();
+    history.pop_back();
+
+    // Apply castling move
+    Piece king;
+    Piece rook;
+    Piece pawn;
+    int8_t kingRank;
+
+    if (theBoard.GetTurn() == Color::WHITE) {
+        king = Piece::WHITE_KING;
+        rook = Piece::WHITE_ROOK;
+        pawn = Piece::WHITE_PAWN;
+        kingRank = 0;
+    }
+    else {
+        king = Piece::BLACK_KING;
+        rook = Piece::BLACK_ROOK;
+        pawn = Piece::BLACK_PAWN;
+        kingRank = 7;
+    }
+
+    if (theBoard(move.to) == king && move.to == Square{ kingRank, 4 }) {
+        if (move.from == Square{ kingRank, 2 }) {
+            //Move rook
+            theBoard.SetSquare({ kingRank, 0 }, rook);
+            theBoard.SetSquare({ kingRank, 3 }, Piece::NO_PIECE);
+        }
+        if (move.to == Square{ 0, 6 }) {
+            //Move rook
+            theBoard.SetSquare({ kingRank, 7 }, rook);
+            theBoard.SetSquare({ kingRank, 5 }, Piece::NO_PIECE);
+        }
+    }
+
+    auto piece = theBoard(move.to);
+
+    theBoard.SetSquare(move.from, piece);
+    theBoard.SetSquare(move.to, move.capturedPiece);
+
+    if (move.promotion)
+        theBoard.SetSquare(move.from, pawn);
+}
+
 
 void ParseBoard(Board& board, const std::string& str) {
     if (str.length() != 64) {

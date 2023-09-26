@@ -111,4 +111,8 @@ private:
     uint64_t hash = 0;
 };
 
+extern Board theBoard;
+
+void DoMove(const Move& move);
+void UndoMove();
 void ParseBoard(Board& board, const std::string& str);

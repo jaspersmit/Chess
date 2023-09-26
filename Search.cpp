@@ -88,16 +88,16 @@ auto QuiescenceSearch(Board& board, int depth, int alpha, int beta) -> int {
 }
 
 
-auto MinMax(Board& board, int depth, int alpha, int beta) -> int {
+auto MinMax(int depth, int alpha, int beta) -> int {
     if (depth == 0) {
         numEvaluates++;
         //return QuiescenceSearch(board, 0, alpha, beta);
-        return EvaluateBoard(board);
+        return EvaluateBoard(theBoard);
     }
 
-    auto entry = GetEntry(board.GetHash());
+    auto entry = GetEntry(theBoard.GetHash());
     auto hashMove = INVALID_MOVE;
-    if (entry->hash == board.GetHash()) {
+    if (entry->hash == theBoard.GetHash()) {
         hashMove = entry->bestMove;
         if (entry->depth >= depth) {
             numCacheHits++;
@@ -114,7 +114,7 @@ auto MinMax(Board& board, int depth, int alpha, int beta) -> int {
     }
 
     std::vector<Move> moves;
-    GenerateMoves(board, moves);
+    GenerateMoves(theBoard, moves);
     if (moves.size() == 0) {
         return 0;
     }
@@ -123,7 +123,7 @@ auto MinMax(Board& board, int depth, int alpha, int beta) -> int {
     std::vector<int> indices(moves.size());
     std::iota(indices.begin(), indices.end(), 0);
 
-    OrderMoves(board, moves, indices, hashMove);
+    OrderMoves(theBoard, moves, indices, hashMove);
 
     auto maxScore = -MAX_SCORE;
     auto bestMove = INVALID_MOVE;
@@ -132,14 +132,15 @@ auto MinMax(Board& board, int depth, int alpha, int beta) -> int {
     for (const auto& index : indices) {
         auto& move = moves[index];
         // Search no further if king was captured
-        if (board(move.to) == Piece::WHITE_KING ||
-            board(move.to) == Piece::BLACK_KING)
+        if (theBoard(move.to) == Piece::WHITE_KING ||
+            theBoard(move.to) == Piece::BLACK_KING)
             return MAX_SCORE;
 
-        Board nextBoard = board;
-        nextBoard.ApplyMove(move);
-        nextBoard.SwitchTurn();
-        auto score = -MinMax(nextBoard, depth - 1, -beta, -alpha);
+        DoMove(move);
+        theBoard.SwitchTurn();
+        auto score = -MinMax(depth - 1, -beta, -alpha);
+        theBoard.SwitchTurn();
+        UndoMove();
 
         if (!searchRunning) {
             // Search aborted, return value is garbage when search is aborted
@@ -159,7 +160,7 @@ auto MinMax(Board& board, int depth, int alpha, int beta) -> int {
         }
         if (score >= beta) {
             entry->depth = depth;
-            entry->hash = board.GetHash();
+            entry->hash = theBoard.GetHash();
             entry->bound = Bound::LOWER_BOUND;
             entry->bestMove = move;
             entry->score = score;
@@ -177,10 +178,11 @@ auto MinMax(Board& board, int depth, int alpha, int beta) -> int {
     if (maxScore == -MAX_SCORE) {
         // The enemy can take my king next turn
         // If he can take it now, then we are in mate
-        auto nextBoard = board;
-        nextBoard.SwitchTurn();
-        if (-MinMax(nextBoard, 1, -beta, -alpha) == -MAX_SCORE) {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       return -MAX_SCORE;
+        theBoard.SwitchTurn();
+        auto s = -MinMax(1, -beta, -alpha);
+        theBoard.SwitchTurn();
+        if (s == -MAX_SCORE) {
+            return -MAX_SCORE;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               return -MAX_SCORE;
         }
         else {
             // Otherwise it is stale mate
@@ -189,7 +191,7 @@ auto MinMax(Board& board, int depth, int alpha, int beta) -> int {
     }
 
     entry->depth = depth;
-    entry->hash = board.GetHash();
+    entry->hash = theBoard.GetHash();
     entry->bound = bound;
     entry->bestMove = bestMove;
     entry->score = maxScore;
@@ -197,34 +199,32 @@ auto MinMax(Board& board, int depth, int alpha, int beta) -> int {
     return maxScore;
 }
 
-auto FindBestMove(Board& board) -> Move {
+auto FindBestMove() -> Move {
     numEvaluates = 0;
     numCacheHits = 0;
     numCacheMisses = 0;
-    MinMax(board, searchDepth, -1000000, 1000000);
-    auto entry = GetEntry(board.GetHash());
-    assert(entry->hash == board.GetHash());
+    MinMax(searchDepth, -1000000, 1000000);
+    auto entry = GetEntry(theBoard.GetHash());
+    assert(entry->hash == theBoard.GetHash());
     return entry->bestMove;
 }
 
-auto SearchInThread(Board board) {
+auto SearchInThread() {
     searchDepth = 1;
     while (searchRunning) {
         searchDepth++;
-        MinMax(board, searchDepth, -1000000, 1000000);
+        MinMax(searchDepth, -1000000, 1000000);
     }
     depthReached = searchDepth;
 }
 
-auto FindBestMoveInTime(Board& board) -> Move {
+auto FindBestMoveInTime() -> Move {
     numEvaluates = 0;
     numCacheHits = 0;
     numCacheMisses = 0;
     depthReached = 1;
-    MinMax(board, searchDepth, -1000000, 1000000);
-
     searchRunning = true;
-    std::thread t([&]() { SearchInThread(board); });
+    std::thread t([&]() { SearchInThread(); });
     std::this_thread::sleep_for(std::chrono::seconds(10));
     searchRunning = false;
     t.join();
@@ -232,7 +232,7 @@ auto FindBestMoveInTime(Board& board) -> Move {
 }
 
 // This might somewhat kill the hash?
-auto IsInMate(Board& board) -> bool {
-    auto score = MinMax(board, 2, -1000000, 1000000);
+auto IsInMate() -> bool {
+    auto score = MinMax(2, -1000000, 1000000);
     return score == -MAX_SCORE;
 }

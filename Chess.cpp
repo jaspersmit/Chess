@@ -89,14 +89,13 @@ struct Config {
 };
 
 void PlayLoop(Config config) {
-    Board board;
-    SetDefaultBoard(board);
+    SetDefaultBoard(theBoard);
 
-    std::cout << board;
+    std::cout << theBoard;
     while (true) {
-        std::cout << board;
+        std::cout << theBoard;
 
-        auto turn = board.GetTurn();
+        auto turn = theBoard.GetTurn();
         auto playComputer =
             (turn == Color::WHITE && config.ComputerPlaysWhite) ||
             (turn == Color::BLACK && config.ComputerPlaysBlack);
@@ -108,25 +107,25 @@ void PlayLoop(Config config) {
                 std::string moveString;
                 std::cin >> moveString;
                 move = ParseMove(moveString);
-                if (!IsMoveValid(board, move)) {
+                if (!IsMoveValid(theBoard, move)) {
                     std::cout << "Invalid move\n";
                     move = INVALID_MOVE;
                 }
             }
             std::cout << "Your move " << move << "\n";
-            board.ApplyMove(move);
+            DoMove(move);
         }
         else {
-            auto move = FindBestMoveInTime(board);
+            auto move = FindBestMoveInTime();
             std::cout << "Depth reached " << depthReached << "\n";
             std::cout << "Evaluated " << numEvaluates << " nodes\n";
             std::cout << "Cache hits " << numCacheHits << ", misses " << numCacheMisses << "\n";
-            board.ApplyMove(move);
+            DoMove(move);
             std::cout << "Computer played " << move << "\n";
         }
 
-        board.SwitchTurn();
-        if (IsInMate(board)) {
+        theBoard.SwitchTurn();
+        if (IsInMate()) {
             std::cout << "Mate\n";
             return;
         }
