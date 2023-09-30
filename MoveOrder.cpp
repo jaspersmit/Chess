@@ -3,7 +3,11 @@
 
 #include "Board.h"
 #include "Move.h"
+#include "MoveOrder.h"
 #include "Piece.h"
+
+Killers killers[MAX_KILLERS_DEPTH];
+
 
 namespace {
     auto GetPieceValue(Piece piece) -> int {
@@ -29,10 +33,10 @@ namespace {
     }
 }
 
-void OrderMoves(const Board& board, std::vector<Move>& moves, std::vector<int>& indices, Move hashMove) {
-    std::vector<int> moveScores(moves.size());
-    for (size_t i = 0; i < moves.size(); i++) {
-        auto move = moves[i];
+void OrderMoves(const Board& board, MoveList& moves, std::array<int, 128>& indices, Move hashMove, Killers& killers) {
+    std::array<int, 128> moveScores;
+    for (size_t i = 0; i < moves.GetNumMoves(); i++) {
+        auto move = moves.GetMove(i);
         int score = 0;
         if (move == hashMove) {
             score += 1000;
@@ -41,6 +45,11 @@ void OrderMoves(const Board& board, std::vector<Move>& moves, std::vector<int>& 
         if (!board.IsEmpty(move.to)) {
             score += 100 + GetPieceValue(board(move.to)) - GetPieceValue(board(move.from));
         }
+
+        if (killers.Match(move)) {
+            score += 50;
+        }
+
         else {
             switch (board(move.from)) {
             case Piece::WHITE_KING:
@@ -66,8 +75,8 @@ void OrderMoves(const Board& board, std::vector<Move>& moves, std::vector<int>& 
     }
 
 
-    std::iota(indices.begin(), indices.end(), 0);
-    std::sort(indices.begin(), indices.end(), [&](size_t a, size_t b) {
+    std::iota(indices.begin(), indices.begin() + moves.GetNumMoves(), 0);
+    std::sort(indices.begin(), indices.begin() + moves.GetNumMoves(), [&](size_t a, size_t b) {
         return moveScores[a] > moveScores[b];
         });
 }

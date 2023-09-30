@@ -6,7 +6,7 @@
 std::vector<TtEntry> transpositionTable;
 
 auto InitializeTranspositionTable() -> bool {
-	int numEntries = 64 * 1024 * 1024 / sizeof(TtEntry);
+	int numEntries = 512 * 1024 * 1024 / sizeof(TtEntry);
 	transpositionTable.resize(numEntries);
 	return true;
 }

@@ -8,63 +8,33 @@ struct HistoricMove {
     Square to;
     Piece capturedPiece;
     bool promotion;
+    int flags;
 };
 
 std::vector<HistoricMove> history;
 
 Board theBoard;
 
-void Board::ApplyMove(const Move& move) {
-    // Apply castling move
-    if ((*this)(move.from) == Piece::WHITE_KING && move.from == Square{ 0, 4 }) {
-        if (move.to == Square{ 0, 2 }) {
-            //Move rook
-            SetSquare({ 0, 0 }, Piece::NO_PIECE);
-            SetSquare({ 0, 3 }, Piece::WHITE_ROOK);
-        }
-        if (move.to == Square{ 0, 6 }) {
-            //Move rook
-            SetSquare({ 0, 7 }, Piece::NO_PIECE);
-            SetSquare({ 0, 5 }, Piece::WHITE_ROOK);
-        }
-    }
-    if ((*this)(move.from) == Piece::BLACK_KING && move.from == Square{ 7, 4 }) {
-        if (move.to == Square{ 7, 2 }) {
-            //Move rook
-            SetSquare({ 7, 0 }, Piece::NO_PIECE);
-            SetSquare({ 7, 3 }, Piece::BLACK_ROOK);
-        }
-        if (move.to == Square{ 7, 6 }) {
-            //Move rook
-            SetSquare({ 7, 7 }, Piece::NO_PIECE);
-            SetSquare({ 7, 5 }, Piece::BLACK_ROOK);
-        }
-    }
-
-    auto piece = (*this)(move.from);
-
-    SetSquare(move.from, Piece::NO_PIECE);
-    SetSquare(move.to, piece);
-
-    if (move.to.rank == 7 && (*this)(move.to) == Piece::WHITE_PAWN)
-        SetSquare(move.to, Piece::WHITE_QUEEN);
-    if (move.to.rank == 0 && (*this)(move.to) == Piece::BLACK_PAWN)
-        SetSquare(move.to, Piece::BLACK_QUEEN);
-}
-
 void DoMove(const Move& move) {
+
+    int flags = theBoard.GetFlags();
+
     // Apply castling move
     Piece king;
     Piece rook;
     Piece pawn;
     Piece queen;
     int8_t kingRank;
+    int8_t pawnRank;
+    int8_t pawn2MoveRank;
     if (theBoard.GetTurn() == Color::WHITE) {
         king = Piece::WHITE_KING;
         rook = Piece::WHITE_ROOK;
         pawn = Piece::WHITE_PAWN;
         queen = Piece::WHITE_QUEEN;
         kingRank = 0;
+        pawnRank = 1;
+        pawn2MoveRank = 3;
     }
     else {
         king = Piece::BLACK_KING;
@@ -72,19 +42,39 @@ void DoMove(const Move& move) {
         pawn = Piece::BLACK_PAWN;
         queen = Piece::BLACK_QUEEN;
         kingRank = 7;
+        pawnRank = 6;
+        pawn2MoveRank = 4;
     }
 
-    if (theBoard(move.from) == king && move.from == Square{ kingRank, 4 }) {
-        if (move.to == Square{ kingRank, 2 }) {
-            //Move rook
-            theBoard.SetSquare({ kingRank, 0 }, Piece::NO_PIECE);
-            theBoard.SetSquare({ kingRank, 3 }, rook);
+    if (theBoard(move.from) == king) {
+        theBoard.SetCastlingRights(CastlingSide::KING, false);
+        theBoard.SetCastlingRights(CastlingSide::QUEEN, false);
+        if (move.from == Square{ kingRank, 4 }) {
+            if (move.to == Square{ kingRank, 2 }) {
+                //Move rook
+                theBoard.SetSquare({ kingRank, 0 }, Piece::NO_PIECE);
+                theBoard.SetSquare({ kingRank, 3 }, rook);
+            }
+            if (move.to == Square{ 0, 6 }) {
+                //Move rook
+                theBoard.SetSquare({ kingRank, 7 }, Piece::NO_PIECE);
+                theBoard.SetSquare({ kingRank, 5 }, rook);
+            }
         }
-        if (move.to == Square{ 0, 6 }) {
-            //Move rook
-            theBoard.SetSquare({ kingRank, 7 }, Piece::NO_PIECE);
-            theBoard.SetSquare({ kingRank, 5 }, rook);
-        }
+    }
+
+    if (theBoard(move.from) == rook) {
+        if (move.from == Square{ kingRank, 0 })
+            theBoard.SetCastlingRights(CastlingSide::QUEEN, false);
+        if (move.from == Square{ kingRank, 7 })
+            theBoard.SetCastlingRights(CastlingSide::KING, false);
+    }
+
+    if (theBoard(move.from) == pawn && move.from.rank == pawnRank && move.to.rank == pawn2MoveRank) {
+        theBoard.SetEnpassentFile(move.to.file);
+    }
+    else {
+        theBoard.SetEnpassentFile(INVALID_ENPASSENT_FILE);
     }
 
     auto piece = theBoard(move.from);
@@ -99,7 +89,7 @@ void DoMove(const Move& move) {
         promotion = true;
     }
 
-    history.emplace_back(move.from, move.to, capturedPiece, promotion);
+    history.push_back({ move.from, move.to, capturedPiece, promotion, flags });
 }
 
 void UndoMove() {
@@ -125,8 +115,8 @@ void UndoMove() {
         kingRank = 7;
     }
 
-    if (theBoard(move.to) == king && move.to == Square{ kingRank, 4 }) {
-        if (move.from == Square{ kingRank, 2 }) {
+    if (theBoard(move.to) == king && move.from == Square{ kingRank, 4 }) {
+        if (move.to == Square{ kingRank, 2 }) {
             //Move rook
             theBoard.SetSquare({ kingRank, 0 }, rook);
             theBoard.SetSquare({ kingRank, 3 }, Piece::NO_PIECE);
@@ -145,6 +135,8 @@ void UndoMove() {
 
     if (move.promotion)
         theBoard.SetSquare(move.from, pawn);
+
+    theBoard.SetFlags(flags);
 }
 
 
@@ -152,6 +144,8 @@ void ParseBoard(Board& board, const std::string& str) {
     if (str.length() != 64) {
         std::cout << "Could not parse board";
     }
+
+    board.Reset();
 
     for (int i = 0; i < 64; i++) {
         char c = str[i];
@@ -197,6 +191,6 @@ void ParseBoard(Board& board, const std::string& str) {
         }
         int8_t rank = 7 - (i / 8);
         int8_t file = i % 8;
-        board({ rank, file }) = piece;
+        board.SetSquare({ rank, file }, piece);
     }
 }

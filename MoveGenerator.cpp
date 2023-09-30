@@ -2,16 +2,16 @@
 
 #include "MoveGenerator.h"
 
-#define GEN_MOVE(target) moves.push_back({ from, target })
+#define GEN_MOVE(target) moves.AddMove({ from, target })
 
-void GeneratePawnMoves(const Board& board, std::vector<Move>& moves, Square from) {
+void GeneratePawnMoves(const Board& board, MoveList& moves, Square from) {
     auto pushDir = (board.GetTurn() == Color::WHITE) ? Direction{1, 0} : Direction{-1, 0};
     auto up1 = from.Add(pushDir);
     if (board.IsEmpty(up1)) {
         if (from.rank == 6) {
             // Special treat promotion
         }
-        moves.push_back({ from, up1 });
+        moves.AddMove({ from, up1 });
         int8_t startRank = (board.GetTurn() == Color::WHITE) ? 1 : 6;
         if (from.rank == startRank) {
             auto up2 = up1.Add(pushDir);
@@ -46,7 +46,7 @@ Direction knightMoves[8] = {
     {-2, 1}
 };
 
-void GenerateKnightMoves(const Board& board, std::vector<Move>& moves, Square from) {
+void GenerateKnightMoves(const Board& board, MoveList& moves, Square from) {
     for (int i = 0; i < 8; i++) {
         auto to = from.Add(knightMoves[i]);
         if (to.IsValid() && !board.IsCurrentPlayer(to)) {
@@ -62,7 +62,7 @@ Direction bishopDirections[] = {
     {-1, 1}
 };
 
-void GenerateBishopMoves(const Board& board, std::vector<Move>& moves, Square from) {
+void GenerateBishopMoves(const Board& board, MoveList& moves, Square from) {
     for (int i = 0; i < 4; i++) {
         auto direction = bishopDirections[i];
         auto to = from;
@@ -83,7 +83,7 @@ Direction rookDirections[] = {
     {0, -1}
 };
 
-void GenerateRookMoves(const Board& board, std::vector<Move>& moves, Square from) {
+void GenerateRookMoves(const Board& board, MoveList& moves, Square from) {
     for (int i = 0; i < 4; i++) {
         auto direction = rookDirections[i];
         auto to = from;
@@ -97,7 +97,7 @@ void GenerateRookMoves(const Board& board, std::vector<Move>& moves, Square from
     }
 }
 
-void GenerateQueenMoves(const Board& board, std::vector<Move>& moves, Square from) {
+void GenerateQueenMoves(const Board& board, MoveList& moves, Square from) {
     GenerateBishopMoves(board, moves, from);
     GenerateRookMoves(board, moves, from);
 }
@@ -138,7 +138,7 @@ private:
 
 auto GenerateAttacks(const Board& board) -> BitBoard {
     BitBoard bitBoard;
-    std::vector<Move> moves;
+    MoveList moves;
     GenerateMoves(board, moves, false);
     for (const auto& m : moves) {
         bitBoard.Set(m.to);
@@ -146,7 +146,7 @@ auto GenerateAttacks(const Board& board) -> BitBoard {
     return bitBoard;
 }
 
-void GenerateKingMoves(const Board& board, std::vector<Move>& moves, Square from, bool generateCastling) {
+void GenerateKingMoves(const Board& board, MoveList& moves, Square from, bool generateCastling) {
     for (int i = 0; i < 8; i++) {
         Square to = from.Add(kingDirections[i]);
         if (to.IsValid() && !board.IsCurrentPlayer(to)) {
@@ -173,7 +173,8 @@ void GenerateKingMoves(const Board& board, std::vector<Move>& moves, Square from
         if (board({ r, 0 }) == rook
             && board({ r, 1 }) == Piece::NO_PIECE
             && board({ r, 2 }) == Piece::NO_PIECE
-            && board({ r, 3 }) == Piece::NO_PIECE) {
+            && board({ r, 3 }) == Piece::NO_PIECE
+            && board.HasCastlingRights(CastlingSide::QUEEN)) {
 
             Board nextBoard = board;
             nextBoard.SwitchTurn();
@@ -187,7 +188,8 @@ void GenerateKingMoves(const Board& board, std::vector<Move>& moves, Square from
         }
         if (board({ r, 7 }) == rook
             && board({ r, 5 }) == Piece::NO_PIECE
-            && board({ r, 6 }) == Piece::NO_PIECE) {
+            && board({ r, 6 }) == Piece::NO_PIECE
+            && board.HasCastlingRights(CastlingSide::KING)) {
 
             if (attacks.IsZero()) {
                 Board nextBoard = board;
@@ -204,7 +206,7 @@ void GenerateKingMoves(const Board& board, std::vector<Move>& moves, Square from
     }
 }
 
-void GenerateMoves(const Board& board, std::vector<Move>& moves, bool generateCastling) {
+void GenerateMoves(const Board& board, MoveList& moves, bool generateCastling) {
     for (int8_t r = 7; r >= 0; r--) {
         for (int8_t f = 0; f < 8; f++) {
             auto square = Square{ r, f };
@@ -258,7 +260,7 @@ void GenerateMoves(const Board& board, std::vector<Move>& moves, bool generateCa
 
 auto IsInCheck(Board& board) -> bool {
     board.SwitchTurn();
-    std::vector<Move> moves;
+    MoveList moves;
     GenerateMoves(board, moves);
     for (auto& move : moves) {
         if (board.GetTurn() == Color::WHITE && board(move.to) == Piece::BLACK_KING ||
@@ -272,7 +274,7 @@ auto IsInCheck(Board& board) -> bool {
 }
 
 auto IsMoveValid(const Board& board, const Move& move) -> bool {
-    std::vector<Move> moves;
+    MoveList moves;
     GenerateMoves(board, moves);
     bool found = false;
     for (const Move& m : moves) {
@@ -280,7 +282,8 @@ auto IsMoveValid(const Board& board, const Move& move) -> bool {
     }
     if (!found) return false;
     // We cannot set ourselves in check
-    auto testBoard = board;
-    testBoard.ApplyMove(move);
-    return !IsInCheck(testBoard);
+    DoMove(move);
+    auto valid = !IsInCheck(theBoard);
+    UndoMove();
+    return valid;
 }

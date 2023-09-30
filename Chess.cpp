@@ -151,6 +151,7 @@ void PlayComputerVsHuman() {
 void Test();
 
 int main() {
+    //Benchmark();
     Test();
     PlayHumanVsComputer();
 }

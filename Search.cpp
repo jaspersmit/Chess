@@ -16,11 +16,10 @@ int searchDepth = 8;
 volatile bool searchRunning = false;
 auto bestMoveSoFar = INVALID_MOVE;
 
-
-auto QuiescenceSearch(Board& board, int depth, int alpha, int beta) -> int {
-    auto entry = GetEntry(board.GetHash());
+auto QuiescenceSearch(int depth, int alpha, int beta) -> int {
+    auto entry = GetEntry(theBoard.GetHash());
     auto hashMove = INVALID_MOVE;
-    if (entry->hash == board.GetHash()) {
+    if (entry->hash == theBoard.GetHash()) {
         hashMove = entry->bestMove;
         if (entry->depth >= depth) {
             numCacheHits++;
@@ -36,30 +35,32 @@ auto QuiescenceSearch(Board& board, int depth, int alpha, int beta) -> int {
         numCacheMisses++;
     }
 
-    std::vector<Move> moves;
-    GenerateMoves(board, moves);
-    std::vector<int> indices(moves.size());
-    std::iota(indices.begin(), indices.end(), 0);
+    MoveList moves;
+    GenerateMoves(theBoard, moves);
+    std::array<int, 128> indices;
+    std::iota(indices.begin(), indices.begin() + moves.GetNumMoves(), 0);
 
-    OrderMoves(board, moves, indices, hashMove);
+    OrderMoves(theBoard, moves, indices, hashMove, depth < MAX_KILLERS_DEPTH ? killers[depth] : killers[0]);
 
-    auto maxScore = EvaluateBoard(board);
+    auto maxScore = EvaluateBoard(theBoard);
     auto bestMove = INVALID_MOVE;
     auto bound = Bound::UPPER_BOUND;
 
-    for (const auto& index : indices) {
-        auto& move = moves[index];
+    for (int i = 0; i < moves.GetNumMoves(); i++) {
+        auto index = indices[i];
+        auto move = moves.GetMove(index);
         // Search no further if king was captured
-        if (board(move.to) == Piece::WHITE_KING ||
-            board(move.to) == Piece::BLACK_KING)
+        if (theBoard(move.to) == Piece::WHITE_KING ||
+            theBoard(move.to) == Piece::BLACK_KING)
             return MAX_SCORE;
 
-        if (board.IsEmpty(move.to)) continue;
+        if (theBoard.IsEmpty(move.to)) continue;
 
-        Board nextBoard = board;
-        nextBoard.ApplyMove(move);
-        nextBoard.SwitchTurn();
-        auto score = -QuiescenceSearch(nextBoard, depth - 1, -beta, -alpha);
+        DoMove(move);
+        theBoard.SwitchTurn();
+        auto score = -QuiescenceSearch(depth - 1, -beta, -alpha);
+        theBoard.SwitchTurn();
+        UndoMove();
 
         if (score > alpha) {
             bound = Bound::EXACT;
@@ -67,7 +68,7 @@ auto QuiescenceSearch(Board& board, int depth, int alpha, int beta) -> int {
         }
         if (score >= beta) {
             entry->depth = depth;
-            entry->hash = board.GetHash();
+            entry->hash = theBoard.GetHash();
             entry->bound = Bound::LOWER_BOUND;
             entry->bestMove = move;
             entry->score = score;
@@ -79,7 +80,7 @@ auto QuiescenceSearch(Board& board, int depth, int alpha, int beta) -> int {
     }
 
     entry->depth = depth;
-    entry->hash = board.GetHash();
+    entry->hash = theBoard.GetHash();
     entry->bound = bound;
     entry->bestMove = bestMove;
     entry->score = maxScore;
@@ -113,24 +114,24 @@ auto MinMax(int depth, int alpha, int beta) -> int {
         numCacheMisses++;
     }
 
-    std::vector<Move> moves;
+    MoveList moves;
     GenerateMoves(theBoard, moves);
-    if (moves.size() == 0) {
+    if (moves.GetNumMoves() == 0) {
         return 0;
     }
 
-
-    std::vector<int> indices(moves.size());
+    std::array<int, 128> indices;
     std::iota(indices.begin(), indices.end(), 0);
 
-    OrderMoves(theBoard, moves, indices, hashMove);
+    OrderMoves(theBoard, moves, indices, hashMove, depth < MAX_KILLERS_DEPTH ? killers[depth] : killers[0]);
 
     auto maxScore = -MAX_SCORE;
     auto bestMove = INVALID_MOVE;
     auto bound = Bound::UPPER_BOUND;
 
-    for (const auto& index : indices) {
-        auto& move = moves[index];
+    for (int i = 0; i < moves.GetNumMoves(); i++) {
+        auto index = indices[i];
+        auto move = moves.GetMove(index);
         // Search no further if king was captured
         if (theBoard(move.to) == Piece::WHITE_KING ||
             theBoard(move.to) == Piece::BLACK_KING)
@@ -159,6 +160,10 @@ auto MinMax(int depth, int alpha, int beta) -> int {
             alpha = score;
         }
         if (score >= beta) {
+            if (theBoard(move.to) == Piece::NO_PIECE && depth < MAX_KILLERS_DEPTH) {
+                killers[depth].Add(move);
+            }
+
             entry->depth = depth;
             entry->hash = theBoard.GetHash();
             entry->bound = Bound::LOWER_BOUND;
@@ -235,4 +240,25 @@ auto FindBestMoveInTime() -> Move {
 auto IsInMate() -> bool {
     auto score = MinMax(2, -1000000, 1000000);
     return score == -MAX_SCORE;
+}
+
+void Benchmark() {
+    ParseBoard(theBoard,
+        "RNBQKBNR"
+        "PPPPPPPP"
+        "........"
+        "........"
+        "........"
+        "........"
+        "pppppppp"
+        "rnbqkbnr"
+    );
+    auto startTime = std::chrono::high_resolution_clock::now();
+    searchDepth = 10;
+    searchRunning = true;
+    MinMax(searchDepth, -1000000, 1000000);
+    searchRunning = false;
+    auto endTime = std::chrono::high_resolution_clock::now();
+    auto ms = std::chrono::duration<double, std::milli>(endTime - startTime).count();
+    std::cout << "Time taken " << ms << " ms";
 }

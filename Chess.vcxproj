@@ -148,6 +148,7 @@
     <ClInclude Include="Evaluate.h" />
     <ClInclude Include="Move.h" />
     <ClInclude Include="MoveGenerator.h" />
+    <ClInclude Include="MoveList.h" />
     <ClInclude Include="MoveOrder.h" />
     <ClInclude Include="Piece.h" />
     <ClInclude Include="Search.h" />

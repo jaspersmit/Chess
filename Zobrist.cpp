@@ -10,13 +10,19 @@ uint64_t GetZobristHash(Square square, Piece piece) {
 	return piecePositionHashes[static_cast<int>(piece) * 64 + square.rank * 8 + square.file];
 }
 
-int InitializePositionHashes() {
+bool InitializePositionHashes() {
 	std::mt19937_64 randomNumberGenerator;
 	turnHash = randomNumberGenerator();
-	int i;
-	for (i = 0; i < 64 * 13; i++)
+
+	for (auto color = 0; color < 2; color++) {
+		for (auto side = 0; side < 2; side++) {
+			castlingRightsHashes[color][side] = randomNumberGenerator();
+		}
+	}
+
+	for (auto i = 0; i < 64 * 13; i++)
 		piecePositionHashes[i] = randomNumberGenerator();
-	return i;
+	return true;
 }
 
-int numPiecePositionHashesInitialed = InitializePositionHashes();
+int numPiecePositionHashesInitialized = InitializePositionHashes();

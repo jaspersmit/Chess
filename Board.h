@@ -9,12 +9,30 @@
 #include "Zobrist.h"
 
 constexpr int MAX_SCORE = 1000000;
+constexpr int8_t INVALID_ENPASSENT_FILE = 8;
 
 enum class Color : int8_t {
     WHITE = 1,
     NEUTRAL = 0,
     BLACK = -1
 };
+
+enum class CastlingSide : int8_t {
+    QUEEN = 0,
+    KING = 1
+};
+
+constexpr int ColorToIndex(Color color) {
+    switch (color) {
+    case Color::WHITE: return 0;
+    case Color::BLACK: return 1;
+    }
+    assert(false);
+}
+
+constexpr int CastlingSideToIndex(CastlingSide side) {
+    return static_cast<int>(side);
+}
 
 inline std::ostream& operator <<(std::ostream& o, Color color) {
     switch (color) {
@@ -49,6 +67,14 @@ public:
         assert(square.rank * 8 + square.file < 64);
         assert(square.rank * 8 + square.file >= 0);
         return pieces[square.rank * 8 + square.file];
+    }
+
+    inline void Reset() {
+        for (int i = 0; i < 64; i++) {
+            pieces[i] = Piece::NO_PIECE;
+        }
+        hash = 0;
+        flags = 0;
     }
 
     auto IsEmpty(Square square) const -> bool {
@@ -98,17 +124,47 @@ public:
         (*this)(square) = piece;
     }
 
-    void ApplyMove(const Move& move);
-
-    void SwitchTurn() {
+    inline void SwitchTurn() {
         turn = InvertColor(turn);
         hash ^= turnHash;
+    }
+
+    inline auto HasCastlingRights(CastlingSide side) const -> bool {
+        int bit = 2 * ColorToIndex(turn) + CastlingSideToIndex(side);
+        return (1 << bit) & flags;
+    }
+
+    inline void SetCastlingRights(CastlingSide side, bool rights) {
+        if (HasCastlingRights(side) != rights) {
+            hash ^= castlingRightsHashes[ColorToIndex(turn)][CastlingSideToIndex(side)];
+            int bit = 2 * ColorToIndex(turn) + CastlingSideToIndex(side);
+            int mask = 1 << bit;
+            flags = (flags & ~mask) | (-flags & mask);
+        }
+    }
+
+    void SetEnpassentFile(int8_t file) {
+        
+    }
+
+    auto GetEnpassenFile() {
+        return (GetFlags() & 0b1110000) >> 4;
+    }
+
+    auto GetFlags() -> int {
+        return flags;
+    }
+
+    void SetFlags(int flags) {
+        this->flags = flags;
     }
 
 private:
     Piece pieces[64] = {};
     Color turn = Color::WHITE;
     uint64_t hash = 0;
+    int flags = 0; // Castling rights, en passent active
+
 };
 
 extern Board theBoard;

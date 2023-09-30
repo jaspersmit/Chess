@@ -12,3 +12,4 @@ auto MinMax(int depth, int alpha, int beta)->int;
 auto FindBestMove()->Move;
 auto FindBestMoveInTime() -> Move;
 auto IsInMate() -> bool;
+void Benchmark();

@@ -6,8 +6,10 @@
 
 class Square {
 public:
-    int8_t rank;
-    int8_t file;
+    int8_t rank = 0;
+    int8_t file = 0;
+
+    constexpr Square() {}
 
     constexpr Square(int8_t rank, int8_t file) :
         rank(rank), file(file) {
