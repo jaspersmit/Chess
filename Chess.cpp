@@ -28,61 +28,6 @@ void SetDefaultBoard(Board& board) {
     );
 }
 
-std::ostream& operator<<(std::ostream& o, Piece piece) {
-    switch (piece) {
-    case Piece::NO_PIECE:
-        o << ".";
-        break;
-    case Piece::WHITE_PAWN:
-        o << "p";
-        break;
-    case Piece::WHITE_ROOK:
-        o << "r";
-        break;
-    case Piece::WHITE_KNIGHT:
-        o << "n";
-        break;
-    case Piece::WHITE_BISHOP:
-        o << "b";
-        break;
-    case Piece::WHITE_QUEEN:
-        o << "q";
-        break;
-    case Piece::WHITE_KING:
-        o << "k";
-        break;
-    case Piece::BLACK_PAWN:
-        o << "P";
-        break;
-    case Piece::BLACK_ROOK:
-        o << "R";
-        break;
-    case Piece::BLACK_KNIGHT:
-        o << "N";
-        break;
-    case Piece::BLACK_BISHOP:
-        o << "B";
-        break;
-    case Piece::BLACK_QUEEN:
-        o << "Q";
-        break;
-    case Piece::BLACK_KING:
-        o << "K";
-        break;
-    }
-    return o;
-}
-
-std::ostream& operator<<(std::ostream& o, const Board& board) {
-    for (int8_t r = 7; r >= 0; r--) {
-        for (int8_t f = 0; f < 8; f++) {
-            o << board({ r, f });
-        }
-        o << "\n";
-    }
-    return o;
-}
-
 struct Config {
     bool ComputerPlaysWhite = false;
     bool ComputerPlaysBlack = false;
@@ -141,7 +86,7 @@ void PlayHumanVsHuman() {
 }
 
 void PlayHumanVsComputer() {
-    PlayLoop({ false, true });
+    PlayLoop({ true, false });
 }
 
 void PlayComputerVsHuman() {
@@ -153,5 +98,5 @@ void Test();
 int main() {
     //Benchmark();
     Test();
-    PlayHumanVsComputer();
+    //PlayHumanVsComputer();
 }

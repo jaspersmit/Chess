@@ -188,7 +188,7 @@ void GenerateKingMoves(const Board& board, MoveList& moves, Square from, bool ge
         }
         if (board({ r, 7 }) == rook
             && board({ r, 5 }) == Piece::NO_PIECE
-            && board({ r, 6 }) == Piece::NO_PIECE
+            && board({ r, 6 }) == Piece::NO_PIECE 
             && board.HasCastlingRights(CastlingSide::KING)) {
 
             if (attacks.IsZero()) {

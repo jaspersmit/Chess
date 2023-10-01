@@ -138,6 +138,29 @@ void TestCastling() {
 	);
 	ASSERT(IsMoveValid(board, ParseMove("E1C1")));
 
+	// Test castling rights
+	ParseBoard(theBoard,
+		".......K"
+		"........"
+		"........"
+		"........"
+		"........"
+		"........"
+		"........"
+		"r...k..r"
+	);
+
+	ASSERT(IsMoveValid(theBoard, ParseMove("E1G1")));
+	ASSERT(theBoard.HasCastlingRights(CastlingSide::KING));
+	ASSERT(IsMoveValid(theBoard, ParseMove("H1H2")));
+	DoMove(ParseMove("H1H2"));
+	ASSERT(!theBoard.HasCastlingRights(CastlingSide::KING));
+	theBoard.SwitchTurn();
+	DoMove(ParseMove("H8H7"));
+	theBoard.SwitchTurn();
+	DoMove(ParseMove("H2H1"));
+	theBoard.SwitchTurn();
+	ASSERT(!IsMoveValid(theBoard, ParseMove("E1G1")));
 }
 
 void Test() {

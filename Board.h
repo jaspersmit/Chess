@@ -131,7 +131,7 @@ public:
 
     inline auto HasCastlingRights(CastlingSide side) const -> bool {
         int bit = 2 * ColorToIndex(turn) + CastlingSideToIndex(side);
-        return (1 << bit) & flags;
+        return !((1 << bit) & flags);
     }
 
     inline void SetCastlingRights(CastlingSide side, bool rights) {
@@ -139,7 +139,7 @@ public:
             hash ^= castlingRightsHashes[ColorToIndex(turn)][CastlingSideToIndex(side)];
             int bit = 2 * ColorToIndex(turn) + CastlingSideToIndex(side);
             int mask = 1 << bit;
-            flags = (flags & ~mask) | (-flags & mask);
+            flags = (flags & ~mask) | (-(!rights) & mask);
         }
     }
 
@@ -166,6 +166,16 @@ private:
     int flags = 0; // Castling rights, en passent active
 
 };
+
+inline std::ostream& operator<<(std::ostream& o, const Board& board) {
+    for (int8_t r = 7; r >= 0; r--) {
+        for (int8_t f = 0; f < 8; f++) {
+            o << board({ r, f });
+        }
+        o << "\n";
+    }
+    return o;
+}
 
 extern Board theBoard;
 

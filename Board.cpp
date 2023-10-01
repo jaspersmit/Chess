@@ -16,7 +16,6 @@ std::vector<HistoricMove> history;
 Board theBoard;
 
 void DoMove(const Move& move) {
-
     int flags = theBoard.GetFlags();
 
     // Apply castling move
@@ -55,7 +54,7 @@ void DoMove(const Move& move) {
                 theBoard.SetSquare({ kingRank, 0 }, Piece::NO_PIECE);
                 theBoard.SetSquare({ kingRank, 3 }, rook);
             }
-            if (move.to == Square{ 0, 6 }) {
+            if (move.to == Square{ kingRank, 6 }) {
                 //Move rook
                 theBoard.SetSquare({ kingRank, 7 }, Piece::NO_PIECE);
                 theBoard.SetSquare({ kingRank, 5 }, rook);
@@ -96,6 +95,8 @@ void UndoMove() {
     auto move = history.back();
     history.pop_back();
 
+    auto flags = move.flags;
+
     // Apply castling move
     Piece king;
     Piece rook;
@@ -121,7 +122,7 @@ void UndoMove() {
             theBoard.SetSquare({ kingRank, 0 }, rook);
             theBoard.SetSquare({ kingRank, 3 }, Piece::NO_PIECE);
         }
-        if (move.to == Square{ 0, 6 }) {
+        if (move.to == Square{ kingRank, 6 }) {
             //Move rook
             theBoard.SetSquare({ kingRank, 7 }, rook);
             theBoard.SetSquare({ kingRank, 5 }, Piece::NO_PIECE);
