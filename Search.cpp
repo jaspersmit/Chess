@@ -236,9 +236,11 @@ auto FindBestMoveInTime() -> Move {
     return bestMoveSoFar;
 }
 
-// This might somewhat kill the hash?
 auto IsInMate() -> bool {
+    searchDepth = 4; // To prevent print
+    searchRunning = true;
     auto score = MinMax(2, -1000000, 1000000);
+    searchRunning = false;
     return score == -MAX_SCORE;
 }
 

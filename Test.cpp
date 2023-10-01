@@ -163,6 +163,22 @@ void TestCastling() {
 	ASSERT(!IsMoveValid(theBoard, ParseMove("E1G1")));
 }
 
+
+void TestMate() {
+	ParseBoard(theBoard,
+		"........"
+		"........"
+		"........"
+		"........"
+		"........"
+		"....K..."
+		"....Q..."
+		"r...k..r"
+	);
+	ASSERT(IsInMate());
+}
+
 void Test() {
 	TestCastling();
+	TestMate();
 }

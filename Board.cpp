@@ -3,12 +3,19 @@
 #include "Board.h"
 #include "Zobrist.h"
 
+enum class SpecialMove {
+    NORMAL_MOVE,
+    INVALIDATE_CASTLING,
+    INVALIDATE_CASTLING_KING_SIDE,
+    INVALIDATE_CASTLING_QUEEN_SIDE
+};
+
 struct HistoricMove {
     Square from;
     Square to;
     Piece capturedPiece;
     bool promotion;
-    int flags;
+    SpecialMove specialMove;
 };
 
 std::vector<HistoricMove> history;
@@ -16,7 +23,7 @@ std::vector<HistoricMove> history;
 Board theBoard;
 
 void DoMove(const Move& move) {
-    int flags = theBoard.GetFlags();
+    auto specialMove = SpecialMove::NORMAL_MOVE;
 
     // Apply castling move
     Piece king;
@@ -46,8 +53,14 @@ void DoMove(const Move& move) {
     }
 
     if (theBoard(move.from) == king) {
-        theBoard.SetCastlingRights(CastlingSide::KING, false);
-        theBoard.SetCastlingRights(CastlingSide::QUEEN, false);
+        if (theBoard.HasCastlingRights(CastlingSide::KING))
+            if (theBoard.HasCastlingRights(CastlingSide::QUEEN))
+                specialMove = SpecialMove::INVALIDATE_CASTLING;
+            else 
+                specialMove = SpecialMove::INVALIDATE_CASTLING_KING_SIDE;
+        else if (theBoard.HasCastlingRights(CastlingSide::QUEEN))
+            specialMove = SpecialMove::INVALIDATE_CASTLING_QUEEN_SIDE;
+
         if (move.from == Square{ kingRank, 4 }) {
             if (move.to == Square{ kingRank, 2 }) {
                 //Move rook
@@ -63,10 +76,14 @@ void DoMove(const Move& move) {
     }
 
     if (theBoard(move.from) == rook) {
-        if (move.from == Square{ kingRank, 0 })
+        if (move.from == Square{ kingRank, 0 } && theBoard.HasCastlingRights(CastlingSide::QUEEN)) {
+            specialMove = SpecialMove::INVALIDATE_CASTLING_QUEEN_SIDE;
             theBoard.SetCastlingRights(CastlingSide::QUEEN, false);
-        if (move.from == Square{ kingRank, 7 })
+        } 
+        else if (move.from == Square{ kingRank, 7 } && theBoard.HasCastlingRights(CastlingSide::KING)) {
+            specialMove = SpecialMove::INVALIDATE_CASTLING_KING_SIDE;
             theBoard.SetCastlingRights(CastlingSide::KING, false);
+        }
     }
 
     if (theBoard(move.from) == pawn && move.from.rank == pawnRank && move.to.rank == pawn2MoveRank) {
@@ -88,14 +105,12 @@ void DoMove(const Move& move) {
         promotion = true;
     }
 
-    history.push_back({ move.from, move.to, capturedPiece, promotion, flags });
+    history.push_back({ move.from, move.to, capturedPiece, promotion, specialMove });
 }
 
 void UndoMove() {
     auto move = history.back();
     history.pop_back();
-
-    auto flags = move.flags;
 
     // Apply castling move
     Piece king;
@@ -137,7 +152,18 @@ void UndoMove() {
     if (move.promotion)
         theBoard.SetSquare(move.from, pawn);
 
-    theBoard.SetFlags(flags);
+    switch (move.specialMove) {
+    case SpecialMove::INVALIDATE_CASTLING:
+        theBoard.SetCastlingRights(CastlingSide::QUEEN, true);
+        theBoard.SetCastlingRights(CastlingSide::KING, true);
+        break;
+    case SpecialMove::INVALIDATE_CASTLING_KING_SIDE:
+        theBoard.SetCastlingRights(CastlingSide::KING, true);
+        break;
+    case SpecialMove::INVALIDATE_CASTLING_QUEEN_SIDE:
+        theBoard.SetCastlingRights(CastlingSide::QUEEN, true);
+        break;
+    }
 }
 
 

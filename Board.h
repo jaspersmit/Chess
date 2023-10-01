@@ -74,7 +74,10 @@ public:
             pieces[i] = Piece::NO_PIECE;
         }
         hash = 0;
-        flags = 0;
+        for(auto i = 0; i < 2; i++) 
+            for(auto j = 0; j < 2; j++)
+                castlingRights[i][j] = true;
+        turn = Color::WHITE;
     }
 
     auto IsEmpty(Square square) const -> bool {
@@ -130,16 +133,13 @@ public:
     }
 
     inline auto HasCastlingRights(CastlingSide side) const -> bool {
-        int bit = 2 * ColorToIndex(turn) + CastlingSideToIndex(side);
-        return !((1 << bit) & flags);
+        return castlingRights[ColorToIndex(turn)][CastlingSideToIndex(side)];
     }
 
     inline void SetCastlingRights(CastlingSide side, bool rights) {
         if (HasCastlingRights(side) != rights) {
             hash ^= castlingRightsHashes[ColorToIndex(turn)][CastlingSideToIndex(side)];
-            int bit = 2 * ColorToIndex(turn) + CastlingSideToIndex(side);
-            int mask = 1 << bit;
-            flags = (flags & ~mask) | (-(!rights) & mask);
+            castlingRights[ColorToIndex(turn)][CastlingSideToIndex(side)] = rights;
         }
     }
 
@@ -147,23 +147,15 @@ public:
         
     }
 
-    auto GetEnpassenFile() {
-        return (GetFlags() & 0b1110000) >> 4;
-    }
-
-    auto GetFlags() -> int {
-        return flags;
-    }
-
-    void SetFlags(int flags) {
-        this->flags = flags;
+    auto GetEnpassentFile() {
+        return 0;
     }
 
 private:
     Piece pieces[64] = {};
     Color turn = Color::WHITE;
     uint64_t hash = 0;
-    int flags = 0; // Castling rights, en passent active
+    bool castlingRights[2][2];
 
 };
 

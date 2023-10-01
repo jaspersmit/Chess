@@ -35,7 +35,6 @@ struct Config {
 
 void PlayLoop(Config config) {
     SetDefaultBoard(theBoard);
-
     std::cout << theBoard;
     while (true) {
         std::cout << theBoard;
@@ -86,7 +85,7 @@ void PlayHumanVsHuman() {
 }
 
 void PlayHumanVsComputer() {
-    PlayLoop({ true, false });
+    PlayLoop({ false, true });
 }
 
 void PlayComputerVsHuman() {
@@ -98,5 +97,5 @@ void Test();
 int main() {
     //Benchmark();
     Test();
-    //PlayHumanVsComputer();
+    PlayHumanVsComputer();
 }
