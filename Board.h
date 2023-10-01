@@ -78,6 +78,7 @@ public:
             for(auto j = 0; j < 2; j++)
                 castlingRights[i][j] = true;
         turn = Color::WHITE;
+        enPassantFile = INVALID_ENPASSENT_FILE;
     }
 
     auto IsEmpty(Square square) const -> bool {
@@ -143,12 +144,16 @@ public:
         }
     }
 
-    void SetEnpassentFile(int8_t file) {
-        
+    void SetEnPassentFile(int8_t newEnpassantFile) {
+        if (enPassantFile != INVALID_ENPASSENT_FILE)
+            hash ^= enPassantHashes[enPassantFile];
+        if (newEnpassantFile != INVALID_ENPASSENT_FILE)
+            hash ^= enPassantHashes[newEnpassantFile];
+        enPassantFile = newEnpassantFile;
     }
 
-    auto GetEnpassentFile() {
-        return 0;
+    auto GetEnPassentFile() const -> uint8_t {
+        return enPassantFile;
     }
 
 private:
@@ -156,7 +161,7 @@ private:
     Color turn = Color::WHITE;
     uint64_t hash = 0;
     bool castlingRights[2][2];
-
+    int8_t enPassantFile = 8;
 };
 
 inline std::ostream& operator<<(std::ostream& o, const Board& board) {

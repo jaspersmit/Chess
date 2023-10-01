@@ -178,7 +178,35 @@ void TestMate() {
 	ASSERT(IsInMate());
 }
 
+void TestEnPassant() {
+	ParseBoard(theBoard,
+		"....K..."
+		"PPPPPPPP"
+		"........"
+		"....p..."
+		"........"
+		"........"
+		"........"
+		"....k..."
+	);
+
+	theBoard.SwitchTurn();
+	DoMove(ParseMove("F7F5"));
+	theBoard.SwitchTurn();
+	ASSERT(IsMoveValid(theBoard, ParseMove("E5F6")));
+	auto hash = theBoard.GetHash();
+	DoMove(ParseMove("E5F6"));
+	UndoMove();
+	ASSERT(hash == theBoard.GetHash());
+
+
+
+
+}
+
+
 void Test() {
 	TestCastling();
 	TestMate();
+	TestEnPassant();
 }

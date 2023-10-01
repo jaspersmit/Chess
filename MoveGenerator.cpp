@@ -6,6 +6,7 @@
 
 void GeneratePawnMoves(const Board& board, MoveList& moves, Square from) {
     auto pushDir = (board.GetTurn() == Color::WHITE) ? Direction{1, 0} : Direction{-1, 0};
+    uint8_t enPassantRank = (board.GetTurn() == Color::WHITE) ? 4 : 3;
     auto up1 = from.Add(pushDir);
     if (board.IsEmpty(up1)) {
         if (from.rank == 6) {
@@ -23,13 +24,15 @@ void GeneratePawnMoves(const Board& board, MoveList& moves, Square from) {
     // Capturing moves
     if (from.file > 0) {
         auto left = up1.Add(0, -1);
-        if (board.IsOtherPlayer(left)) {
+        if (board.IsOtherPlayer(left) ||
+            (left.file == board.GetEnPassentFile() && from.rank == enPassantRank)) {
             GEN_MOVE(left);
         }
     }
     if (from.file < 7) {
         auto right = up1.Add(0, 1);
-        if (board.IsOtherPlayer(right)) {
+        if (board.IsOtherPlayer(right) ||
+            (right.file == board.GetEnPassentFile() && from.rank == enPassantRank)) {
             GEN_MOVE(right);
         }
     }

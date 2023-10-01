@@ -98,4 +98,6 @@ int main() {
     //Benchmark();
     Test();
     PlayHumanVsComputer();
+    //PlayHumanVsHuman();
+
 }

@@ -7,7 +7,8 @@ enum class SpecialMove {
     NORMAL_MOVE,
     INVALIDATE_CASTLING,
     INVALIDATE_CASTLING_KING_SIDE,
-    INVALIDATE_CASTLING_QUEEN_SIDE
+    INVALIDATE_CASTLING_QUEEN_SIDE,
+    EN_PASSANT
 };
 
 struct HistoricMove {
@@ -16,6 +17,7 @@ struct HistoricMove {
     Piece capturedPiece;
     bool promotion;
     SpecialMove specialMove;
+    int8_t previousEnPassentFile;
 };
 
 std::vector<HistoricMove> history;
@@ -33,6 +35,8 @@ void DoMove(const Move& move) {
     int8_t kingRank;
     int8_t pawnRank;
     int8_t pawn2MoveRank;
+    int8_t previousEnPassentFile = theBoard.GetEnPassentFile();
+
     if (theBoard.GetTurn() == Color::WHITE) {
         king = Piece::WHITE_KING;
         rook = Piece::WHITE_ROOK;
@@ -86,11 +90,21 @@ void DoMove(const Move& move) {
         }
     }
 
+    // Check enpassent
+    if (theBoard(move.from) == pawn
+        && move.from.file != move.to.file
+        && theBoard.IsEmpty(move.to)) {
+        specialMove = SpecialMove::EN_PASSANT;
+        // Clear out captured piece 
+        theBoard.SetSquare({ move.from.rank, move.to.file }, Piece::NO_PIECE);
+    }
+
+    // Double move allows en passant on the next move
     if (theBoard(move.from) == pawn && move.from.rank == pawnRank && move.to.rank == pawn2MoveRank) {
-        theBoard.SetEnpassentFile(move.to.file);
+        theBoard.SetEnPassentFile(move.to.file);
     }
     else {
-        theBoard.SetEnpassentFile(INVALID_ENPASSENT_FILE);
+        theBoard.SetEnPassentFile(INVALID_ENPASSENT_FILE);
     }
 
     auto piece = theBoard(move.from);
@@ -105,7 +119,7 @@ void DoMove(const Move& move) {
         promotion = true;
     }
 
-    history.push_back({ move.from, move.to, capturedPiece, promotion, specialMove });
+    history.push_back({ move.from, move.to, capturedPiece, promotion, specialMove, previousEnPassentFile });
 }
 
 void UndoMove() {
@@ -163,9 +177,16 @@ void UndoMove() {
     case SpecialMove::INVALIDATE_CASTLING_QUEEN_SIDE:
         theBoard.SetCastlingRights(CastlingSide::QUEEN, true);
         break;
+    case SpecialMove::EN_PASSANT:
+        // Place back pawn
+        auto capturedPawn = theBoard.GetTurn() == Color::WHITE ? Piece::BLACK_PAWN : Piece::WHITE_PAWN;
+        theBoard.SetSquare({ move.from.rank, move.to.file }, capturedPawn);
+        assert(move.previousEnPassentFile != INVALID_ENPASSENT_FILE);
+        break;
     }
-}
 
+    theBoard.SetEnPassentFile(move.previousEnPassentFile);
+}
 
 void ParseBoard(Board& board, const std::string& str) {
     if (str.length() != 64) {
