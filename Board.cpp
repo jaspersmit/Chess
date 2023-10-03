@@ -181,7 +181,7 @@ void UndoMove() {
         // Place back pawn
         auto capturedPawn = theBoard.GetTurn() == Color::WHITE ? Piece::BLACK_PAWN : Piece::WHITE_PAWN;
         theBoard.SetSquare({ move.from.rank, move.to.file }, capturedPawn);
-        assert(move.previousEnPassentFile != INVALID_ENPASSENT_FILE);
+        assert(move.previousEnPassentFile != INVALID_ENPASSENT_FILE);    
         break;
     }
 

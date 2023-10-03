@@ -92,8 +92,8 @@ auto QuiescenceSearch(int depth, int alpha, int beta) -> int {
 auto MinMax(int depth, int alpha, int beta) -> int {
     if (depth == 0) {
         numEvaluates++;
-        //return QuiescenceSearch(board, 0, alpha, beta);
-        return EvaluateBoard(theBoard);
+        return QuiescenceSearch(0, alpha, beta);
+        //return EvaluateBoard(theBoard);
     }
 
     auto entry = GetEntry(theBoard.GetHash());
@@ -125,7 +125,6 @@ auto MinMax(int depth, int alpha, int beta) -> int {
 
     OrderMoves(theBoard, moves, indices, hashMove, depth < MAX_KILLERS_DEPTH ? killers[depth] : killers[0]);
 
-    auto maxScore = -MAX_SCORE;
     auto bestMove = INVALID_MOVE;
     auto bound = Bound::UPPER_BOUND;
 
@@ -155,10 +154,6 @@ auto MinMax(int depth, int alpha, int beta) -> int {
             std::cout << depth << " " << move << " " << score << "\n";
         }
 
-        if (score > alpha) {
-            bound = Bound::EXACT;
-            alpha = score;
-        }
         if (score >= beta) {
             if (theBoard(move.to) == Piece::NO_PIECE && depth < MAX_KILLERS_DEPTH) {
                 killers[depth].Add(move);
@@ -171,8 +166,9 @@ auto MinMax(int depth, int alpha, int beta) -> int {
             entry->score = score;
             return beta;
         }
-        if (score > maxScore) {
-            maxScore = score;
+        if (score > alpha) {
+            bound = Bound::EXACT;
+            alpha = score;
             bestMove = move;
             if (depth == searchDepth) {
                 bestMoveSoFar = move;
@@ -180,7 +176,7 @@ auto MinMax(int depth, int alpha, int beta) -> int {
         }
     }
 
-    if (maxScore == -MAX_SCORE) {
+    if (alpha == -MAX_SCORE) {
         // The enemy can take my king next turn
         // If he can take it now, then we are in mate
         theBoard.SwitchTurn();
@@ -199,9 +195,9 @@ auto MinMax(int depth, int alpha, int beta) -> int {
     entry->hash = theBoard.GetHash();
     entry->bound = bound;
     entry->bestMove = bestMove;
-    entry->score = maxScore;
+    entry->score = alpha;
 
-    return maxScore;
+    return alpha;
 }
 
 auto FindBestMove() -> Move {
@@ -216,9 +212,28 @@ auto FindBestMove() -> Move {
 
 auto SearchInThread() {
     searchDepth = 1;
+    auto score = 0;
     while (searchRunning) {
         searchDepth++;
-        MinMax(searchDepth, -1000000, 1000000);
+
+        auto delta = 100;
+        auto alpha = score - delta;
+        auto beta = score + delta;
+
+        while (true) {
+            score = MinMax(searchDepth, alpha, beta);
+            if (score <= alpha) {
+                alpha -= delta;
+                delta += delta / 3;
+            }
+            else if (score >= beta) {
+                beta += delta;
+                delta += delta / 3;
+            }
+            else {
+                break;
+            }
+        }
     }
     depthReached = searchDepth;
 }
@@ -258,7 +273,26 @@ void Benchmark() {
     auto startTime = std::chrono::high_resolution_clock::now();
     searchDepth = 10;
     searchRunning = true;
-    MinMax(searchDepth, -1000000, 1000000);
+
+    auto alpha = -100;
+    auto beta = 100;
+    auto delta = 100;
+    while (true) {
+
+        auto result = MinMax(searchDepth, alpha, beta);
+        if (result <= alpha) {
+            alpha -= delta;
+            delta += delta / 3;
+        }
+        else if (result >= beta) {
+            beta += delta;
+            delta += delta / 3;
+        }
+        else {
+            break;
+        }
+    }
+
     searchRunning = false;
     auto endTime = std::chrono::high_resolution_clock::now();
     auto ms = std::chrono::duration<double, std::milli>(endTime - startTime).count();

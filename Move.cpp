@@ -1,8 +1,9 @@
 #include "Move.h"
 
 auto ParseFile(char f) -> int8_t {
-    if (f < 'A' || f > 'H') return -1;
-    return f - 'A';
+    if (f >= 'A' && f <= 'H') return f - 'A';
+    if (f >= 'a' && f <= 'h') return f - 'a';
+    return -1;
 }
 
 auto ParseRank(char f) -> int8_t {
