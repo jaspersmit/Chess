@@ -90,7 +90,7 @@ auto QuiescenceSearch(int depth, int alpha, int beta) -> int {
 
 
 auto MinMax(int depth, int alpha, int beta) -> int {
-    if (depth == 0) {
+    if (depth <= 0) {
         numEvaluates++;
         return QuiescenceSearch(0, alpha, beta);
         //return EvaluateBoard(theBoard);
@@ -103,6 +103,9 @@ auto MinMax(int depth, int alpha, int beta) -> int {
         if (entry->depth >= depth) {
             numCacheHits++;
             if (entry->bound == Bound::EXACT) {
+                if (depth == searchDepth) {
+                    bestMoveSoFar = entry->bestMove;
+                }
                 return entry->score;
             }
             if (entry->bound == Bound::LOWER_BOUND && entry->score >= beta) {
@@ -136,9 +139,19 @@ auto MinMax(int depth, int alpha, int beta) -> int {
             theBoard(move.to) == Piece::BLACK_KING)
             return MAX_SCORE;
 
+        // Reduce search for quiet moves
+        int reduction = 0;
+        if (i >= 3 && searchDepth - depth >= 3 && theBoard.IsEmpty(move.to)) {
+            reduction = 1;
+        }
+
         DoMove(move);
         theBoard.SwitchTurn();
-        auto score = -MinMax(depth - 1, -beta, -alpha);
+        auto score = -MinMax(depth - 1 - reduction, -beta, -alpha);
+        // If move is good, search for full depth
+        if (score > alpha && reduction > 0) {
+            score = -MinMax(depth - 1, -beta, -alpha);
+        }
         theBoard.SwitchTurn();
         UndoMove();
 
@@ -216,7 +229,7 @@ auto SearchInThread() {
     while (searchRunning) {
         searchDepth++;
 
-        auto delta = 100;
+        auto delta = 5 + abs(score) / 5;
         auto alpha = score - delta;
         auto beta = score + delta;
 
@@ -286,7 +299,7 @@ void Benchmark() {
         }
         else if (result >= beta) {
             beta += delta;
-            delta += delta / 3;
+            delta = std::max(delta + delta / 3, result);
         }
         else {
             break;

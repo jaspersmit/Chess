@@ -204,7 +204,6 @@ void TestEnPassant() {
 
 }
 
-
 void Test() {
 	TestCastling();
 	TestMate();
