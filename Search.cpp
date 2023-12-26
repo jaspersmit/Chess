@@ -1,4 +1,5 @@
 #include <iostream>
+#include <optional>
 #include <thread>
 
 #include "Evaluate.h"
@@ -15,6 +16,7 @@ int depthReached;
 int searchDepth = 8;
 volatile bool searchRunning = false;
 auto bestMoveSoFar = INVALID_MOVE;
+std::optional<std::thread> ponderThread;
 
 auto QuiescenceSearch(int depth, int alpha, int beta) -> int {
     auto entry = GetEntry(theBoard.GetHash());
@@ -163,10 +165,6 @@ auto MinMax(int depth, int alpha, int beta) -> int {
         //Adjust score for number of moves
         if (score > MAX_SCORE - 128) score--;
 
-        if (depth == searchDepth) {
-            std::cout << depth << " " << move << " " << score << "\n";
-        }
-
         if (score >= beta) {
             if (theBoard(move.to) == Piece::NO_PIECE && depth < MAX_KILLERS_DEPTH) {
                 killers[depth].Add(move);
@@ -247,11 +245,33 @@ auto SearchInThread() {
                 break;
             }
         }
+
+        auto entry = GetEntry(theBoard.GetHash());
+        std::cout << searchDepth << " " << entry->bestMove << " " << score << "\n";
+        
     }
     depthReached = searchDepth;
 }
 
+void Ponder() {
+    SearchInThread();
+}
+
+void StartPondering() {
+    if (ponderThread) return;
+    searchRunning = true;
+    ponderThread = std::thread { Ponder };
+}
+
+void StopPondering() {
+    if (!ponderThread) return;
+    searchRunning = false;
+    ponderThread->join();
+    ponderThread = {};
+}
+
 auto FindBestMoveInTime() -> Move {
+    //StopPondering();
     numEvaluates = 0;
     numCacheHits = 0;
     numCacheMisses = 0;
@@ -261,6 +281,7 @@ auto FindBestMoveInTime() -> Move {
     std::this_thread::sleep_for(std::chrono::seconds(10));
     searchRunning = false;
     t.join();
+    //StartPondering();
     return bestMoveSoFar;
 }
 
