@@ -15,19 +15,6 @@
 #include "Zobrist.h"
 
 
-void SetDefaultBoard(Board& board) {
-    ParseBoard(board,
-        "RNBQKBNR"
-        "PPPPPPPP"
-        "........"
-        "........"
-        "........"
-        "........"
-        "pppppppp"
-        "rnbqkbnr"
-    );
-}
-
 struct Config {
     bool ComputerPlaysWhite = false;
     bool ComputerPlaysBlack = false;
@@ -39,6 +26,8 @@ void PlayLoop(Config config) {
     while (true) {
         std::cout << theBoard;
 
+
+        std::cout << EvaluateBoard(theBoard) << "\n";
         auto turn = theBoard.GetTurn();
         auto playComputer =
             (turn == Color::WHITE && config.ComputerPlaysWhite) ||
@@ -96,10 +85,11 @@ void Test();
 
 
 
-int main() {
-    //Benchmark();
-    Test();
-    PlayHumanVsComputer();
-    //PlayHumanVsHuman();
-
-}
+//int main() {
+//    //Benchmark();
+//    Test();
+//    PlayComputerVsHuman();
+//    //PlayHumanVsComputer();
+//    //PlayHumanVsHuman();
+//
+//}

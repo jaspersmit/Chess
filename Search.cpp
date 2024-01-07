@@ -14,6 +14,7 @@ int numCacheMisses;
 int depthReached;
 
 int searchDepth = 8;
+int searchTime = 1;
 volatile bool searchRunning = false;
 auto bestMoveSoFar = INVALID_MOVE;
 std::optional<std::thread> ponderThread;
@@ -246,8 +247,8 @@ auto SearchInThread() {
             }
         }
 
-        auto entry = GetEntry(theBoard.GetHash());
-        std::cout << searchDepth << " " << entry->bestMove << " " << score << "\n";
+        //auto entry = GetEntry(theBoard.GetHash());
+        //std::cout << searchDepth << " " << entry->bestMove << " " << score << "\n";
         
     }
     depthReached = searchDepth;
@@ -278,7 +279,7 @@ auto FindBestMoveInTime() -> Move {
     depthReached = 1;
     searchRunning = true;
     std::thread t([&]() { SearchInThread(); });
-    std::this_thread::sleep_for(std::chrono::seconds(10));
+    std::this_thread::sleep_for(std::chrono::seconds(searchTime));
     searchRunning = false;
     t.join();
     //StartPondering();

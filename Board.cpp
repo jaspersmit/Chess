@@ -242,3 +242,16 @@ void ParseBoard(Board& board, const std::string& str) {
         board.SetSquare({ rank, file }, piece);
     }
 }
+
+void SetDefaultBoard(Board& board) {
+    ParseBoard(board,
+        "RNBQKBNR"
+        "PPPPPPPP"
+        "........"
+        "........"
+        "........"
+        "........"
+        "pppppppp"
+        "rnbqkbnr"
+    );
+}

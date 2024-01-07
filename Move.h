@@ -20,4 +20,6 @@ inline std::ostream& operator<<(std::ostream& o, const Move& move) {
     return o << move.from << " -> " << move.to;
 }
 
+std::string MoveToUCI(const Move& move);
+
 auto ParseMove(const std::string& moveString) -> Move;

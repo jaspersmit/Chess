@@ -1,3 +1,5 @@
+#include <sstream>
+
 #include "Move.h"
 
 auto ParseFile(char f) -> int8_t {
@@ -21,3 +23,11 @@ auto ParseMove(const std::string& moveString) -> Move {
     return { {r1,f1}, {r2, f2} };
 }
 
+std::string MoveToUCI(const Move& move) {
+    std::stringstream ss;
+    ss << static_cast<char>('a' + move.from.file)
+        << (move.from.rank + 1)
+        << static_cast<char>('a' + move.to.file)
+        << (move.to.rank + 1);
+    return ss.str();
+}

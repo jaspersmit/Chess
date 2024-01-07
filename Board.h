@@ -30,6 +30,12 @@ constexpr int ColorToIndex(Color color) {
     assert(false);
 }
 
+constexpr Color GetColorOfPiece(Piece piece) {
+    if (piece == Piece::NO_PIECE) return Color::NEUTRAL;
+    else if (piece <= Piece::WHITE_KING) return Color::WHITE;
+    else return Color::BLACK;
+}
+
 constexpr int CastlingSideToIndex(CastlingSide side) {
     return static_cast<int>(side);
 }
@@ -179,3 +185,4 @@ extern Board theBoard;
 void DoMove(const Move& move);
 void UndoMove();
 void ParseBoard(Board& board, const std::string& str);
+void SetDefaultBoard(Board& board);
