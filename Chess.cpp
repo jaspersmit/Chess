@@ -85,11 +85,11 @@ void Test();
 
 
 
-//int main() {
-//    //Benchmark();
-//    Test();
-//    PlayComputerVsHuman();
-//    //PlayHumanVsComputer();
-//    //PlayHumanVsHuman();
-//
-//}
+int main2() {
+    //Benchmark();
+    Test();
+    //PlayComputerVsHuman();
+    PlayHumanVsComputer();
+    //PlayHumanVsHuman();
+    return 0;
+}

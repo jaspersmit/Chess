@@ -9,7 +9,6 @@
 #include "Search.h"
 
 int main() {
-
 	while (true) {
 		std::string line;
 		std::getline(std::cin, line);
@@ -53,14 +52,38 @@ int main() {
 					}
 				}
 			}
+		}
+		else if (command == "move?") { // Unofficial, tries to make a move replied with valid or invalid
+			SetDefaultBoard(theBoard);
+			bool valid = true;
+			for (int i = 1; i < arguments.size(); i++) {
+				auto move = ParseMove(arguments[i]);
+				if (!IsMoveValid(theBoard, move)) {
+					valid = false;
+				}
+				else {
+					DoMove(move);
+					theBoard.SwitchTurn();
+				}
+			}
+			std::cout << (valid ? "valid\n" : "invalid\n");
 
 		}
 		else if (command == "go") {
 			auto move = FindBestMoveInTime();
 			DoMove(move);
 			theBoard.SwitchTurn();
-			std::cout << "bestmove " << MoveToUCI(move) << "\n";
-
+			std::cout << "bestmove " << MoveToUCI(move);
+			if (IsInMate()) {
+				std::cout << " mate";
+			}
+			std::cout << "\n";
+		}
+		else if (command == "getboard") {
+			std::cout << "board " << GetProtocolString(theBoard) << "\n";
+		}
+		else if (command == "exit") {
+			break;
 		}
 		else {
 			std::cout << "unknown command " << command << "\n";

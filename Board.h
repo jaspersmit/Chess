@@ -186,3 +186,4 @@ void DoMove(const Move& move);
 void UndoMove();
 void ParseBoard(Board& board, const std::string& str);
 void SetDefaultBoard(Board& board);
+std::string GetProtocolString(const Board& board);

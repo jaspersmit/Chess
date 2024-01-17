@@ -1,3 +1,4 @@
+#include <sstream>
 #include <vector>
 
 #include "Board.h"
@@ -254,4 +255,14 @@ void SetDefaultBoard(Board& board) {
         "pppppppp"
         "rnbqkbnr"
     );
+}
+
+std::string GetProtocolString(const Board& board) {
+    std::stringstream ss;
+    for (int8_t rank = 7; rank >= 0; rank--) {
+        for (int8_t file = 0; file < 8; file++) {
+            ss << board(Square{ rank, file });
+        }
+    }
+    return ss.str();
 }
