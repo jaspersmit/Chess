@@ -2,6 +2,7 @@
 #include <optional>
 #include <thread>
 
+#include "Book.h"
 #include "Evaluate.h"
 #include "MoveGenerator.h"
 #include "MoveOrder.h"
@@ -272,6 +273,9 @@ void StopPondering() {
 }
 
 auto FindBestMoveInTime() -> Move {
+    auto bookMove = GetBookMove(theBoard);
+    if (bookMove.has_value()) return *bookMove;
+
     //StopPondering();
     numEvaluates = 0;
     numCacheHits = 0;
@@ -313,7 +317,6 @@ void Benchmark() {
     auto beta = 100;
     auto delta = 100;
     while (true) {
-
         auto result = MinMax(searchDepth, alpha, beta);
         if (result <= alpha) {
             alpha -= delta;

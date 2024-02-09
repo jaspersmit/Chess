@@ -3,12 +3,15 @@
 #include <string>
 #include <vector>
 
+#include "Book.h"
 #include "Board.h"
 #include "Move.h"
 #include "MoveGenerator.h"
 #include "Search.h"
 
 int main() {
+	ReadBook();
+
 	while (true) {
 		std::string line;
 		std::getline(std::cin, line);

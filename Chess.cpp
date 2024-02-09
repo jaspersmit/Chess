@@ -25,8 +25,6 @@ void PlayLoop(Config config) {
     std::cout << theBoard;
     while (true) {
         std::cout << theBoard;
-
-
         std::cout << EvaluateBoard(theBoard) << "\n";
         auto turn = theBoard.GetTurn();
         auto playComputer =

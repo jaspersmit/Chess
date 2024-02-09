@@ -63,22 +63,21 @@ constexpr Color InvertColor(Color color) {
 
 class Board {
 public:
-    auto operator() (Square square) -> Piece& {
-        assert(square.rank * 8 + square.file < 64);
-        assert(square.rank * 8 + square.file >= 0);
-        return pieces[square.rank * 8 + square.file];
-    }
-
     auto operator() (Square square) const -> const Piece& {
         assert(square.rank * 8 + square.file < 64);
         assert(square.rank * 8 + square.file >= 0);
         return pieces[square.rank * 8 + square.file];
     }
 
+    auto operator() (Square square) -> Piece& {
+        assert(square.rank * 8 + square.file < 64);
+        assert(square.rank * 8 + square.file >= 0);
+        return pieces[square.rank * 8 + square.file];
+    }
+
     inline void Reset() {
-        for (int i = 0; i < 64; i++) {
+        for (int i = 0; i < 64; i++)
             pieces[i] = Piece::NO_PIECE;
-        }
         hash = 0;
         for(auto i = 0; i < 2; i++) 
             for(auto j = 0; j < 2; j++)
@@ -118,6 +117,16 @@ public:
         return turn;
     }
 
+    inline void SwitchTurn() {
+        turn = InvertColor(turn);
+        hash ^= turnHash;
+    }
+
+    void SetTurn(Color color) {
+        if (turn == color) return;
+        SwitchTurn();
+    }
+
     auto GetHash() const -> uint64_t {
         return hash;
     }
@@ -134,11 +143,6 @@ public:
         (*this)(square) = piece;
     }
 
-    inline void SwitchTurn() {
-        turn = InvertColor(turn);
-        hash ^= turnHash;
-    }
-
     inline auto HasCastlingRights(CastlingSide side) const -> bool {
         return castlingRights[ColorToIndex(turn)][CastlingSideToIndex(side)];
     }
@@ -147,6 +151,17 @@ public:
         if (HasCastlingRights(side) != rights) {
             hash ^= castlingRightsHashes[ColorToIndex(turn)][CastlingSideToIndex(side)];
             castlingRights[ColorToIndex(turn)][CastlingSideToIndex(side)] = rights;
+        }
+    }
+
+    inline auto HasCastlingRights(Color color, CastlingSide side) const -> bool {
+        return castlingRights[ColorToIndex(color)][CastlingSideToIndex(side)];
+    }
+
+    inline void SetCastlingRights(Color color, CastlingSide side, bool rights) {
+        if (HasCastlingRights(color, side) != rights) {
+            hash ^= castlingRightsHashes[ColorToIndex(color)][CastlingSideToIndex(side)];
+            castlingRights[ColorToIndex(color)][CastlingSideToIndex(side)] = rights;
         }
     }
 
@@ -185,5 +200,7 @@ extern Board theBoard;
 void DoMove(const Move& move);
 void UndoMove();
 void ParseBoard(Board& board, const std::string& str);
+void ParseFENBoard(Board& board, const std::string& fen);
+std::string FormatFENBoard(Board& board);
 void SetDefaultBoard(Board& board);
 std::string GetProtocolString(const Board& board);
