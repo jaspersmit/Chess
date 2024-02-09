@@ -60,12 +60,19 @@ void DoMove(const Move& move) {
 
     if (theBoard(move.from) == king) {
         if (theBoard.HasCastlingRights(CastlingSide::KING))
-            if (theBoard.HasCastlingRights(CastlingSide::QUEEN))
+            if (theBoard.HasCastlingRights(CastlingSide::QUEEN)) {
+                theBoard.SetCastlingRights(CastlingSide::KING, false);
+                theBoard.SetCastlingRights(CastlingSide::QUEEN, false);
                 specialMove = SpecialMove::INVALIDATE_CASTLING;
-            else 
+            } 
+            else {
+                theBoard.SetCastlingRights(CastlingSide::KING, false);
                 specialMove = SpecialMove::INVALIDATE_CASTLING_KING_SIDE;
-        else if (theBoard.HasCastlingRights(CastlingSide::QUEEN))
+            }
+        else if (theBoard.HasCastlingRights(CastlingSide::QUEEN)) {
+            theBoard.SetCastlingRights(CastlingSide::QUEEN, false);
             specialMove = SpecialMove::INVALIDATE_CASTLING_QUEEN_SIDE;
+        }
 
         if (move.from == Square{ kingRank, 4 }) {
             if (move.to == Square{ kingRank, 2 }) {

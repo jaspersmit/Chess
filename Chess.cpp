@@ -5,6 +5,7 @@
 #include <cassert>
 
 #include "Board.h"
+#include "Book.h"
 #include "Evaluate.h"
 #include "Move.h"
 #include "MoveGenerator.h"
@@ -12,6 +13,7 @@
 #include "Piece.h"
 #include "Search.h"
 #include "TranspositionTable.h"
+#include "UCI.h"
 #include "Zobrist.h"
 
 
@@ -83,11 +85,17 @@ void Test();
 
 
 
-int main2() {
-    //Benchmark();
-    Test();
-    //PlayComputerVsHuman();
-    PlayHumanVsComputer();
-    //PlayHumanVsHuman();
+int main(int argc, char** argv) {
+    ReadBook();
+    if (argc >= 2 && std::string(argv[1]) == "uci") {
+        UCILoop();
+    }
+    else {
+        //Benchmark();
+        //Test();
+        //PlayComputerVsHuman();
+        PlayHumanVsComputer();
+        //PlayHumanVsHuman();
+    }
     return 0;
 }
