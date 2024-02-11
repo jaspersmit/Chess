@@ -16,20 +16,16 @@ public:
 
     }
 
-    auto operator+ (const Square& other) const -> Square {
-        return { rank + other.rank, file + other.file };
-    }
-
     auto operator == (const Square& other) const -> bool {
         return other.file == file && other.rank == rank;
     }
 
     auto Add(int8_t r, int8_t f) const-> Square {
-        return { rank + r, file + f };
+        return { static_cast<int8_t>(rank + r), static_cast<int8_t>(file + f) };
     }
 
     auto Add(Direction direction) const-> Square {
-        return { rank + direction.vertical, file + direction.horizontal };
+        return { static_cast<int8_t>(rank + direction.vertical), static_cast<int8_t>(file + direction.horizontal) };
     }
 
     auto IsValid() const -> bool {
