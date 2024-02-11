@@ -161,6 +161,26 @@ void TestCastling() {
 	DoMove(ParseMove("H2H1"));
 	theBoard.SwitchTurn();
 	ASSERT(!IsMoveValid(theBoard, ParseMove("E1G1")));
+
+	ParseBoard(theBoard,
+		".......K"
+		"........"
+		"........"
+		"........"
+		"........"
+		"........"
+		"........"
+		"r...k..r"
+	);
+	ASSERT(IsMoveValid(theBoard, ParseMove("E1G1")));
+	DoMove(ParseMove("E1F1"));
+	theBoard.SwitchTurn();
+	DoMove(ParseMove("H8G8"));
+	theBoard.SwitchTurn();
+	DoMove(ParseMove("F1E1"));
+	theBoard.SwitchTurn();
+	DoMove(ParseMove("G8H8"));
+	ASSERT(!IsMoveValid(theBoard, ParseMove("E1G1")));
 }
 
 

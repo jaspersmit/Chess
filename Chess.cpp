@@ -87,6 +87,7 @@ void Test();
 
 int main(int argc, char** argv) {
     ReadBook();
+    //Test();
     if (argc >= 2 && std::string(argv[1]) == "uci") {
         UCILoop();
     }
