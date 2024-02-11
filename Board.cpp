@@ -319,7 +319,7 @@ void ParseFENBoard(Board& board, const std::string& fen) {
                     piece = Piece::WHITE_PAWN;
                     break;
                 }
-                board.SetSquare(Square{ 7 - rank, file }, piece);
+                board.SetSquare(Square{ static_cast<int8_t>(7 - rank), file }, piece);
                 file++;
             }
         }

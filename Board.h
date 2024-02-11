@@ -28,6 +28,7 @@ constexpr int ColorToIndex(Color color) {
     case Color::BLACK: return 1;
     }
     assert(false);
+    return 0;
 }
 
 constexpr Color GetColorOfPiece(Piece piece) {
@@ -181,7 +182,7 @@ private:
     Piece pieces[64] = {};
     Color turn = Color::WHITE;
     uint64_t hash = 0;
-    bool castlingRights[2][2];
+    bool castlingRights[2][2] = { {true, true}, {true, true} };
     int8_t enPassantFile = 8;
 };
 

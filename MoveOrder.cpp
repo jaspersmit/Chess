@@ -30,12 +30,13 @@ namespace {
         case Piece::BLACK_PAWN:
             return 1;
         }
+        return 0;
     }
 }
 
 void OrderMoves(const Board& board, MoveList& moves, std::array<int, 128>& indices, Move hashMove, Killers& killers) {
     std::array<int, 128> moveScores;
-    for (size_t i = 0; i < moves.GetNumMoves(); i++) {
+    for (int i = 0; i < moves.GetNumMoves(); i++) {
         auto move = moves.GetMove(i);
         int score = 0;
         if (move == hashMove) {
