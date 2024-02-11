@@ -7,19 +7,17 @@
 
 enum class SpecialMove {
     NORMAL_MOVE,
-    INVALIDATE_CASTLING,
-    INVALIDATE_CASTLING_KING_SIDE,
-    INVALIDATE_CASTLING_QUEEN_SIDE,
-    EN_PASSANT
+    EN_PASSANT,
+    PROMOTION
 };
 
 struct HistoricMove {
     Square from;
     Square to;
     Piece capturedPiece;
-    bool promotion;
     SpecialMove specialMove;
     int8_t previousEnPassentFile;
+    int8_t previousCastlingRights;
 };
 
 std::vector<HistoricMove> history;
@@ -37,7 +35,9 @@ void DoMove(const Move& move) {
     int8_t kingRank;
     int8_t pawnRank;
     int8_t pawn2MoveRank;
-    int8_t previousEnPassentFile = theBoard.GetEnPassentFile();
+    auto previousEnPassentFile = theBoard.GetEnPassentFile();
+    auto previousCastlingRights = theBoard.GetCastlingRights();
+
 
     if (theBoard.GetTurn() == Color::WHITE) {
         king = Piece::WHITE_KING;
@@ -59,20 +59,8 @@ void DoMove(const Move& move) {
     }
 
     if (theBoard(move.from) == king) {
-        if (theBoard.HasCastlingRights(CastlingSide::KING))
-            if (theBoard.HasCastlingRights(CastlingSide::QUEEN)) {
-                theBoard.SetCastlingRights(CastlingSide::KING, false);
-                theBoard.SetCastlingRights(CastlingSide::QUEEN, false);
-                specialMove = SpecialMove::INVALIDATE_CASTLING;
-            } 
-            else {
-                theBoard.SetCastlingRights(CastlingSide::KING, false);
-                specialMove = SpecialMove::INVALIDATE_CASTLING_KING_SIDE;
-            }
-        else if (theBoard.HasCastlingRights(CastlingSide::QUEEN)) {
-            theBoard.SetCastlingRights(CastlingSide::QUEEN, false);
-            specialMove = SpecialMove::INVALIDATE_CASTLING_QUEEN_SIDE;
-        }
+        theBoard.SetCastlingRights(CastlingSide::KING, false);
+        theBoard.SetCastlingRights(CastlingSide::QUEEN, false);
 
         if (move.from == Square{ kingRank, 4 }) {
             if (move.to == Square{ kingRank, 2 }) {
@@ -89,12 +77,10 @@ void DoMove(const Move& move) {
     }
 
     if (theBoard(move.from) == rook) {
-        if (move.from == Square{ kingRank, 0 } && theBoard.HasCastlingRights(CastlingSide::QUEEN)) {
-            specialMove = SpecialMove::INVALIDATE_CASTLING_QUEEN_SIDE;
+        if (move.from == Square{ kingRank, 0 }) {
             theBoard.SetCastlingRights(CastlingSide::QUEEN, false);
         } 
-        else if (move.from == Square{ kingRank, 7 } && theBoard.HasCastlingRights(CastlingSide::KING)) {
-            specialMove = SpecialMove::INVALIDATE_CASTLING_KING_SIDE;
+        else if (move.from == Square{ kingRank, 7 }) {
             theBoard.SetCastlingRights(CastlingSide::KING, false);
         }
     }
@@ -122,13 +108,12 @@ void DoMove(const Move& move) {
     theBoard.SetSquare(move.from, Piece::NO_PIECE);
     theBoard.SetSquare(move.to, piece);
 
-    auto promotion = false;
     if (move.to.rank == (7 - kingRank) && theBoard(move.to) == pawn) {
         theBoard.SetSquare(move.to, queen);
-        promotion = true;
+        specialMove = SpecialMove::PROMOTION;
     }
 
-    history.push_back({ move.from, move.to, capturedPiece, promotion, specialMove, previousEnPassentFile });
+    history.push_back({ move.from, move.to, capturedPiece, specialMove, previousEnPassentFile, previousCastlingRights });
 }
 
 void UndoMove() {
@@ -172,29 +157,23 @@ void UndoMove() {
     theBoard.SetSquare(move.from, piece);
     theBoard.SetSquare(move.to, move.capturedPiece);
 
-    if (move.promotion)
-        theBoard.SetSquare(move.from, pawn);
-
     switch (move.specialMove) {
-    case SpecialMove::INVALIDATE_CASTLING:
-        theBoard.SetCastlingRights(CastlingSide::QUEEN, true);
-        theBoard.SetCastlingRights(CastlingSide::KING, true);
-        break;
-    case SpecialMove::INVALIDATE_CASTLING_KING_SIDE:
-        theBoard.SetCastlingRights(CastlingSide::KING, true);
-        break;
-    case SpecialMove::INVALIDATE_CASTLING_QUEEN_SIDE:
-        theBoard.SetCastlingRights(CastlingSide::QUEEN, true);
-        break;
     case SpecialMove::EN_PASSANT:
+    {
         // Place back pawn
         auto capturedPawn = theBoard.GetTurn() == Color::WHITE ? Piece::BLACK_PAWN : Piece::WHITE_PAWN;
         theBoard.SetSquare({ move.from.rank, move.to.file }, capturedPawn);
-        assert(move.previousEnPassentFile != INVALID_ENPASSENT_FILE);    
+        assert(move.previousEnPassentFile != INVALID_ENPASSENT_FILE);
+        break;
+    }
+
+    case SpecialMove::PROMOTION:
+        theBoard.SetSquare(move.from, pawn);
         break;
     }
 
     theBoard.SetEnPassentFile(move.previousEnPassentFile);
+    theBoard.SetCastlingRights(move.previousCastlingRights);
 }
 
 void ParseBoard(Board& board, const std::string& str) {

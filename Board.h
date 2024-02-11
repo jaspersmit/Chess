@@ -80,9 +80,7 @@ public:
         for (int i = 0; i < 64; i++)
             pieces[i] = Piece::NO_PIECE;
         hash = 0;
-        for(auto i = 0; i < 2; i++) 
-            for(auto j = 0; j < 2; j++)
-                castlingRights[i][j] = true;
+        castlingRights = 0b1111;
         turn = Color::WHITE;
         enPassantFile = INVALID_ENPASSENT_FILE;
     }
@@ -144,25 +142,41 @@ public:
         (*this)(square) = piece;
     }
 
+    inline auto GetCastlingRights() const -> int8_t {
+        return castlingRights;
+    }
+
+    void SetCastlingRights(int8_t castlingRights) {
+        this->castlingRights = castlingRights;
+    }
+
+    inline auto GetCastlingBit(Color color, CastlingSide side) const -> int8_t {
+        if (color == Color::WHITE) 
+            return side == CastlingSide::QUEEN ? 0b0001 : 0b0010;
+        else
+            return side == CastlingSide::QUEEN ? 0b0100 : 0b1000;
+    }
+
     inline auto HasCastlingRights(CastlingSide side) const -> bool {
-        return castlingRights[ColorToIndex(turn)][CastlingSideToIndex(side)];
+        return HasCastlingRights(turn, side);
     }
 
     inline void SetCastlingRights(CastlingSide side, bool rights) {
-        if (HasCastlingRights(side) != rights) {
-            hash ^= castlingRightsHashes[ColorToIndex(turn)][CastlingSideToIndex(side)];
-            castlingRights[ColorToIndex(turn)][CastlingSideToIndex(side)] = rights;
-        }
+        SetCastlingRights(turn, side, rights);
     }
 
     inline auto HasCastlingRights(Color color, CastlingSide side) const -> bool {
-        return castlingRights[ColorToIndex(color)][CastlingSideToIndex(side)];
+        return castlingRights & GetCastlingBit(color, side);
     }
 
     inline void SetCastlingRights(Color color, CastlingSide side, bool rights) {
         if (HasCastlingRights(color, side) != rights) {
             hash ^= castlingRightsHashes[ColorToIndex(color)][CastlingSideToIndex(side)];
-            castlingRights[ColorToIndex(color)][CastlingSideToIndex(side)] = rights;
+            auto bit = GetCastlingBit(color, side);
+            if (rights)
+                castlingRights |= bit;
+            else
+                castlingRights &= ~bit;
         }
     }
 
@@ -174,7 +188,7 @@ public:
         enPassantFile = newEnpassantFile;
     }
 
-    auto GetEnPassentFile() const -> uint8_t {
+    auto GetEnPassentFile() const -> int8_t {
         return enPassantFile;
     }
 
@@ -182,8 +196,8 @@ private:
     Piece pieces[64] = {};
     Color turn = Color::WHITE;
     uint64_t hash = 0;
-    bool castlingRights[2][2] = { {true, true}, {true, true} };
     int8_t enPassantFile = 8;
+    int8_t castlingRights;
 };
 
 inline std::ostream& operator<<(std::ostream& o, const Board& board) {
